@@ -1,5 +1,5 @@
 {
-  "name": "heimrichhannot/contao-isotope-bundle",
+  "name": "heimrichhannot/contao-isotope-extension-bundle",
   "type": "contao-bundle",
   "description": "This bundle offers additional functionality for the isotope ecommerce system.",
   "license": "LGPL-3.0-or-later",
