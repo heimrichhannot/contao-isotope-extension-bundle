@@ -8,6 +8,7 @@
     "contao/core-bundle": "^4.9",
     "isotope/isotope-core": "^2.7",
     "heimrichhannot/contao-utils-bundle": "^2.191",
+    "heimrichhannot/contao-formhybrid": "^3.17",
     "heimrichhannot/contao-request-bundle": "^1.2"
   },
   "require-dev": {
@@ -42,5 +43,8 @@
   "extra": {
     "contao-manager-plugin": "HeimrichHannot\\IsotopeExtensionBundle\\ContaoManager\\Plugin",
     "foxy": true
+  },
+  "suggest": {
+    "heimrichhannot/contao-tiny-slider-bundle": "Render a product list as a tiny slider."
   }
 }

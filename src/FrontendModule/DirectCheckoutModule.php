@@ -11,9 +11,10 @@ namespace HeimrichHannot\IsotopeExtensionBundle\FrontendModule;
 use Contao\Module;
 use Contao\System;
 use HeimrichHannot\IsotopeExtensionBundle\Form\DirectCheckoutForm;
+use HeimrichHannot\UtilsBundle\Container\ContainerUtil;
 use Isotope\Module\Checkout;
 
-class IsoDirectCheckoutModule extends Checkout
+class DirectCheckoutModule extends Checkout
 {
     const TYPE = 'iso_direct_checkout';
 
@@ -21,7 +22,7 @@ class IsoDirectCheckoutModule extends Checkout
 
     public function generate()
     {
-        if (System::getContainer()->get('huh.utils.container')->isBackend()) {
+        if (System::getContainer()->get(ContainerUtil::class)->isBackend()) {
             $objTemplate = new \BackendTemplate('be_wildcard');
 
             $objTemplate->wildcard = '### ISOTOPE ECOMMERCE: DIRECT CHECKOUT ###';

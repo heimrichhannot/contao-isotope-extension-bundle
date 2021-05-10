@@ -6,21 +6,25 @@
  * @license LGPL-3.0-or-later
  */
 
-namespace HeimrichHannot\IsotopeSubscriptionsBundle\DataContainer;
+namespace HeimrichHannot\IsotopeExtensionBundle\DataContainer;
 
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\ServiceAnnotation\Callback;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
+use Isotope\Frontend\ProductAction\Registry;
 
 class ModuleContainer
 {
     /**
      * @var ModelUtil
      */
-    protected ModelUtil $modelUtil;
+    protected ModelUtil       $modelUtil;
+    protected ContaoFramework $framework;
 
-    public function __construct(ModelUtil $modelUtil)
+    public function __construct(ModelUtil $modelUtil, ContaoFramework $framework)
     {
         $this->modelUtil = $modelUtil;
+        $this->framework = $framework;
     }
 
     /**
@@ -55,9 +59,13 @@ class ModuleContainer
         }
     }
 
-    public static function getProducts()
+    public static function getProductsAsOptions()
     {
         $products = \Isotope\Model\Product::findPublished();
+
+        if (null === $products) {
+            return [];
+        }
 
         $productTypeLabels = [];
         $options = [];
@@ -77,6 +85,20 @@ class ModuleContainer
         }
 
         asort($options);
+
+        return $options;
+    }
+
+    /**
+     * @Callback(table="tl_module", target="fields.iso_buttons.options")
+     */
+    public function getButtonsAsOptions()
+    {
+        $options['downloadSingleProduct'] = $GLOBALS['TL_LANG']['MSC']['buttonLabel']['downloadSingleProduct'];
+
+        foreach (Registry::all() as $action) {
+            $options[$action->getName()] = $action->getLabel();
+        }
 
         return $options;
     }

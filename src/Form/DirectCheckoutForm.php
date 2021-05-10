@@ -17,6 +17,7 @@ use HeimrichHannot\StatusMessages\StatusMessage;
 use Isotope\CheckoutStep\BillingAddress;
 use Isotope\CheckoutStep\ShippingAddress;
 use Isotope\CheckoutStep\ShippingMethod;
+use Isotope\Interfaces\IsotopeCheckoutStep;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Isotope;
 use Isotope\Model\Address;
@@ -30,7 +31,7 @@ use Isotope\RequestCache\Sort;
 class DirectCheckoutForm extends Form
 {
     protected $strMethod = FORMHYBRID_METHOD_POST;
-    protected $arrBillingAddressFields = [];
+    protected $billingAddressFields = [];
     protected $arrShippingAddressFields = [];
     protected $arrProducts = [];
     protected $objCheckoutModule;
@@ -44,61 +45,56 @@ class DirectCheckoutForm extends Form
         parent::__construct($objModule, $instanceId);
     }
 
-    public function modifyDC(&$arrDca = null)
+    public function modifyDC(&$dca = null)
     {
-        $fieldPalette = System::getContainer()->get('huh.fieldpalette.manager');
-
         // get the product
         switch ($this->iso_direct_checkout_product_mode) {
             case 'product_type':
-                if (null !== ($objTypes = $fieldPalette->getInstance()->findByPidAndTableAndField($this->objModule->id, 'tl_module', 'iso_direct_checkout_product_types'))) {
-                    while ($objTypes->next()) {
-                        $arrColumns = [
-                            'type=?',
+                foreach (StringUtil::deserialize($this->iso_direct_checkout_product_types, true) as $type) {
+                    $columns = [
+                        'type=?',
+                    ];
+
+                    $values = [
+                        $type['iso_direct_checkout_product_type'],
+                    ];
+
+                    if ($this->iso_listingSortField) {
+                        $sorting = [
+                            $this->iso_listingSortField => ('DESC' == $this->iso_listingSortDirection ? Sort::descending() : Sort::ascending()),
+                        ];
+                    } else {
+                        $sorting = [];
+                    }
+
+                    $products = Product::findPublishedBy($columns, $values, [
+                        'sorting' => $sorting,
+                    ]);
+
+                    if ($products->count() > 0) {
+                        $product = $products->current();
+
+                        $this->arrProducts[] = [
+                            'product' => $product,
+                            'useQuantity' => $type['iso_use_quantity'],
                         ];
 
-                        $arrValues = [
-                            $objTypes->iso_direct_checkout_product_type,
-                        ];
-
-                        if ($this->iso_listingSortField) {
-                            $arrSorting = [
-                                $this->iso_listingSortField => ('DESC' == $this->iso_listingSortDirection ? Sort::descending() : Sort::ascending()),
-                            ];
-                        } else {
-                            $arrSorting = [];
-                        }
-
-                        $objProducts = Product::findPublishedBy($arrColumns, $arrValues, [
-                            'sorting' => $arrSorting,
-                        ]);
-
-                        if ($objProducts->count() > 0) {
-                            $objProduct = $objProducts->current();
-
-                            $this->arrProducts[] = [
-                                'product' => $objProduct,
-                                'useQuantity' => $objTypes->iso_use_quantity,
-                            ];
-
-                            $this->addProductFields($objProduct, $objTypes->iso_use_quantity, $objTypes->iso_addSubscriptionCheckbox, $arrDca);
-                        }
+                        $this->addProductFields($product, $type['iso_use_quantity'], $type['iso_addSubscriptionCheckbox'], $dca);
                     }
                 }
 
                 break;
 
             default:
-                if (null !== ($objProducts = $fieldPalette->getInstance()->findByPidAndTableAndField($this->objModule->id, 'tl_module', 'iso_direct_checkout_products'))) {
-                    while ($objProducts->next()) {
-                        $objProduct = Product::findByPk($objProducts->iso_direct_checkout_product);
+                foreach (StringUtil::deserialize($this->iso_direct_checkout_products, true) as $productData) {
+                    $product = Product::findByPk($productData['iso_direct_checkout_product']);
 
-                        $this->arrProducts[] = [
-                            'product' => $objProduct,
-                            'useQuantity' => $objProducts->iso_use_quantity,
-                        ];
-                        $this->addProductFields($objProduct, $objProducts->iso_use_quantity, $objProducts->iso_addSubscriptionCheckbox, $arrDca);
-                    }
+                    $this->arrProducts[] = [
+                        'product' => $product,
+                        'useQuantity' => $productData['iso_use_quantity'],
+                    ];
+
+                    $this->addProductFields($product, $productData['iso_use_quantity'], $productData['iso_addSubscriptionCheckbox'], $dca);
                 }
 
                 break;
@@ -108,23 +104,23 @@ class DirectCheckoutForm extends Form
         Controller::loadDataContainer('tl_iso_address');
         System::loadLanguageFile('tl_iso_address');
 
-        $arrAddressFields = StringUtil::deserialize(Config::findByPk($this->iso_config_id)->address_fields, true);
+        $addressFields = StringUtil::deserialize(Config::findByPk($this->iso_config_id)->address_fields, true);
 
         // add billing address fields
-        foreach ($arrAddressFields as $strName => $arrAddressField) {
-            $arrData = $GLOBALS['TL_DCA']['tl_iso_address']['fields'][$strName];
+        foreach ($addressFields as $name => $addressField) {
+            $data = $GLOBALS['TL_DCA']['tl_iso_address']['fields'][$name];
 
-            if (!\is_array($arrData) || 'disabled' == $arrAddressField['billing']) {
+            if (!\is_array($data) || 'disabled' == $addressField['billing']) {
                 continue;
             }
 
-            $arrData['eval']['mandatory'] = 'mandatory' == $arrAddressField['billing'];
+            $data['eval']['mandatory'] = 'mandatory' == $addressField['billing'];
 
-            $this->arrBillingAddressFields[] = $strName;
-            $this->addEditableField($strName, $arrData);
+            $this->billingAddressFields[] = $name;
+            $this->addEditableField($name, $data);
         }
 
-        $this->addFieldsToDefaultPalette($this->arrBillingAddressFields);
+        $this->addFieldsToDefaultPalette($this->billingAddressFields);
 
         if ($this->iso_use_notes) {
             $this->addEditableField('notes', [
@@ -163,25 +159,25 @@ class DirectCheckoutForm extends Form
         ]);
 
         // add shipping address fields
-        $arrShippingAddressFields = [];
+        $shippingAddressFields = [];
 
-        foreach ($arrAddressFields as $strName => $arrAddressField) {
-            $arrData = $GLOBALS['TL_DCA']['tl_iso_address']['fields'][$strName];
+        foreach ($addressFields as $name => $addressField) {
+            $data = $GLOBALS['TL_DCA']['tl_iso_address']['fields'][$name];
 
-            if (!\is_array($arrData) || 'disabled' == $arrAddressField['shipping']) {
+            if (!\is_array($data) || 'disabled' == $addressField['shipping']) {
                 continue;
             }
 
-            $arrData['eval']['mandatory'] = 'mandatory' == $arrAddressField['shipping'];
+            $data['eval']['mandatory'] = 'mandatory' == $addressField['shipping'];
 
-            $this->addEditableField('shippingaddress_'.$strName, $arrData);
+            $this->addEditableField('shippingaddress_'.$name, $data);
 
-            $arrShippingAddressFields[] = 'shippingaddress_'.$strName;
+            $shippingAddressFields[] = 'shippingaddress_'.$name;
         }
 
         $this->dca['palettes']['__selector__'][] = 'shippingaddress';
-        $this->dca['subpalettes']['shippingaddress'] = implode(',', $arrShippingAddressFields);
-        $this->arrShippingAddressFields = $arrShippingAddressFields;
+        $this->dca['subpalettes']['shippingaddress'] = implode(',', $shippingAddressFields);
+        $this->arrShippingAddressFields = $shippingAddressFields;
 
         $this->addFieldsToDefaultPalette($this->arrShippingAddressFields);
     }
@@ -213,73 +209,73 @@ class DirectCheckoutForm extends Form
         }
     }
 
-    protected function addFieldsToDefaultPalette($arrFields)
+    protected function addFieldsToDefaultPalette($fields)
     {
-        $strFields = '';
+        $palette = '';
 
-        if (!\is_array($arrFields)) {
-            if ($arrFields && !preg_match("~\b ".$arrFields."\b~", $this->dca['palettes']['default'])) {
-                $strFields .= ','.$arrFields;
+        if (!\is_array($fields)) {
+            if ($fields && !preg_match("~\b ".$fields."\b~", $this->dca['palettes']['default'])) {
+                $palette .= ','.$fields;
             }
         } else {
-            foreach ($arrFields as $field) {
+            foreach ($fields as $field) {
                 if (!preg_match("~\b ".$field."\b~", $this->dca['palettes']['default'])) {
-                    $strFields .= ','.$field;
+                    $palette .= ','.$field;
                 }
             }
         }
 
-        $this->dca['palettes']['default'] .= $strFields.';';
+        $this->dca['palettes']['default'] .= $palette.';';
     }
 
-    protected function addProductFields($objProduct, $blnAddQuantity, $blnAddSubscriptionCheckbox, &$arrDca)
+    protected function addProductFields($product, $addQuantity, $addSubscriptionCheckbox, &$dca)
     {
-        $blnSubPalette = $blnAddQuantity ||
+        $blnSubPalette = $addQuantity ||
             (class_exists('HeimrichHannot\IsotopeSubscriptionsBundle\HeimrichHannotIsotopeSubscriptionsBundle') &&
-                $blnAddSubscriptionCheckbox);
+                $addSubscriptionCheckbox);
 
         $this->setProductCount(\count(StringUtil::deserialize($this->iso_direct_checkout_products, true)));
         $this->setTypeCount(\count(StringUtil::deserialize($this->iso_direct_checkout_product_types, true)));
 
         if ($this->getProductCount() > 1 || $this->getTypeCount() > 1) {
             // add checkbox
-            $this->addEditableField('product_'.$objProduct->id, [
-                'label' => $objProduct->name,
+            $this->addEditableField('product_'.$product->id, [
+                'label' => $product->name,
                 'inputType' => 'checkbox',
                 'eval' => [
                     'submitOnChange' => $blnSubPalette,
                 ],
             ]);
 
-            $this->addFieldsToDefaultPalette('product_'.$objProduct->id);
+            $this->addFieldsToDefaultPalette('product_'.$product->id);
 
             if ($blnSubPalette) {
-                $arrDca['palettes']['__selector__'][] = 'product_'.$objProduct->id;
+                $dca['palettes']['__selector__'][] = 'product_'.$product->id;
             }
 
-            if ($blnAddQuantity) {
-                $arrDca['subpalettes']['product_'.$objProduct->id] = 'quantity_'.$objProduct->id;
+            if ($addQuantity) {
+                $dca['subpalettes']['product_'.$product->id] = 'quantity_'.$product->id;
             }
 
             if (class_exists('HeimrichHannot\IsotopeSubscriptionsBundle\HeimrichHannotIsotopeSubscriptionsBundle') &&
-                $blnAddSubscriptionCheckbox) {
-                $arrDca['subpalettes']['product_'.$objProduct->id] .= ',subscribeToProduct_'.$objProduct->id;
+                $addSubscriptionCheckbox) {
+                $dca['subpalettes']['product_'.$product->id] .= ',subscribeToProduct_'.$product->id;
             }
         }
 
-        if ($blnAddQuantity) {
-            $this->addEditableField('quantity_'.$objProduct->id, [
+        if ($addQuantity) {
+            $this->addEditableField('quantity_'.$product->id, [
                 'label' => &$GLOBALS['TL_LANG']['MSC']['quantity'],
                 'inputType' => 'text',
                 'eval' => ['mandatory' => true],
             ]);
 
-            $this->addFieldsToDefaultPalette('quantity_'.$objProduct->id);
+            $this->addFieldsToDefaultPalette('quantity_'.$product->id);
         }
 
         if (class_exists('HeimrichHannot\IsotopeSubscriptionsBundle\HeimrichHannotIsotopeSubscriptionsBundle') &&
-            $blnAddSubscriptionCheckbox) {
-            $this->addEditableField('subscribeToProduct_'.$objProduct->id, [
+            $addSubscriptionCheckbox) {
+            $this->addEditableField('subscribeToProduct_'.$product->id, [
                 'label' => ' ',
                 'inputType' => 'checkbox',
                 'options' => [
@@ -287,7 +283,7 @@ class DirectCheckoutForm extends Form
                 ],
             ]);
 
-            $this->addFieldsToDefaultPalette('subscribeToProduct_'.$objProduct->id);
+            $this->addFieldsToDefaultPalette('subscribeToProduct_'.$product->id);
         }
     }
 
@@ -306,10 +302,10 @@ class DirectCheckoutForm extends Form
         // get a product collection (aka cart)
         global $objPage;
 
-        $objCart = new Cart();
+        $cart = new Cart();
 
         // Can't call the individual rows here, it would trigger markModified and a save()
-        $objCart->setRow(array_merge($objCart->row(), [
+        $cart->setRow(array_merge($cart->row(), [
             'tstamp' => time(),
             'member' => 0,
             'uniqid' => null,
@@ -317,54 +313,54 @@ class DirectCheckoutForm extends Form
             'store_id' => (int) $framework->getAdapter(PageModel::class)->findByPk($objPage->rootId)->iso_store_id,
         ]));
 
-        $objSubmission = $this->getSubmission(false);
+        $submission = $this->getSubmission(false);
 
         // add products to cart
         foreach ($this->arrProducts as $arrProduct) {
             $strProduct = 'product_'.$arrProduct['product']->id;
             $strQuantity = 'quantity_'.$arrProduct['product']->id;
 
-            if (($this->getProductCount() > 1 || $this->getTypeCount() > 1) && !$objSubmission->{$strProduct}) {
+            if (($this->getProductCount() > 1 || $this->getTypeCount() > 1) && !$submission->{$strProduct}) {
                 continue;
             }
 
-            if (!$objCart->addProduct($arrProduct['product'], $arrProduct['useQuantity'] ? $objSubmission->{$strQuantity} : 1)) {
+            if (!$cart->addProduct($arrProduct['product'], $arrProduct['useQuantity'] ? $submission->{$strQuantity} : 1)) {
                 $this->transformIsotopeErrorMessages();
 
                 return;
             }
         }
 
-        $objCart->save();
+        $cart->save();
 
-        $objOrder = $objCart->getDraftOrder();
+        $order = $cart->getDraftOrder();
 
         // temporarily override the cart for generating the reviews...
-        $objCartTmp = $framework->getAdapter(Isotope::class)->getCart();
-        $framework->getAdapter(Isotope::class)->setCart($objCart);
+        $cartTmp = $framework->getAdapter(Isotope::class)->getCart();
+        $framework->getAdapter(Isotope::class)->setCart($cart);
 
         // create steps
-        $arrSteps = [];
-        $arrCheckoutInfo = [];
+        $steps = [];
+        $checkoutInfo = [];
 
         // billing address
-        $objBillingAddress = new Address();
+        $billingAddress = new Address();
 
-        foreach ($this->arrBillingAddressFields as $strName) {
-            $objBillingAddress->{$strName} = $objSubmission->{$strName};
+        foreach ($this->billingAddressFields as $name) {
+            $billingAddress->{$name} = $submission->{$name};
         }
 
-        $objBillingAddress->save();
-        $objOrder->setBillingAddress($objBillingAddress);
-        $objBillingAddressStep = new BillingAddress($this->objCheckoutModule);
-        $arrSteps[] = $objBillingAddressStep;
-        $arrCheckoutInfo['billing_address'] = $objBillingAddressStep->review()['billing_address'];
+        $billingAddress->save();
+        $order->setBillingAddress($billingAddress);
+        $billingAddressStep = new BillingAddress($this->objCheckoutModule);
+        $steps[] = $billingAddressStep;
+        $checkoutInfo['billing_address'] = $billingAddressStep->review()['billing_address'];
 
         // check if shipping method is group
         $shippingMethod = $framework->getAdapter(Shipping::class)->findByPk($this->objCheckoutModule->iso_shipping_modules);
 
         if ('group' == $shippingMethod->type) {
-            $quantity = $objCart->sumItemsQuantity();
+            $quantity = $cart->sumItemsQuantity();
 
             foreach (StringUtil::deserialize($shippingMethod->group_methods) as $method) {
                 $groupMethod = $framework->getAdapter(Shipping::class)->findByPk($method);
@@ -377,48 +373,47 @@ class DirectCheckoutForm extends Form
         }
 
         // shipping address
-        $objShippingAddress = new Address();
+        $shippingAddress = new Address();
 
         // standard isotope handling for distinguishing between the address types:
         // -> if only a billing address is available, it's also the shipping address
-        foreach (
-        ($objSubmission->shippingaddress ? $this->arrShippingAddressFields : $this->arrBillingAddressFields) as $strName
+        foreach (($submission->shippingaddress ? $this->arrShippingAddressFields : $this->billingAddressFields) as $strName
         ) {
-            $objShippingAddress->{str_replace('shippingaddress_', '', $strName)} = $objSubmission->{$objSubmission->shippingaddress ? $strName : str_replace('shippingaddress_', 'billingaddress_', $strName)};
+            $shippingAddress->{str_replace('shippingaddress_', '', $strName)} = $submission->{$submission->shippingaddress ? $strName : str_replace('shippingaddress_', 'billingaddress_', $strName)};
         }
 
-        $objShippingAddress->save();
+        $shippingAddress->save();
 
-        $objOrder->setShippingAddress($objShippingAddress);
+        $order->setShippingAddress($shippingAddress);
         $objShippingAddressStep = new ShippingAddress($this->objCheckoutModule);
-        $arrSteps[] = $objShippingAddressStep;
-        $arrCheckoutInfo['shipping_address'] = $objShippingAddressStep->review()['shipping_address'];
+        $steps[] = $objShippingAddressStep;
+        $checkoutInfo['shipping_address'] = $objShippingAddressStep->review()['shipping_address'];
 
         // add shipping method
-        $objIsotopeShipping = $framework->getAdapter(Flat::class)->findByPk($this->iso_shipping_modules);
-        $objOrder->setShippingMethod($objIsotopeShipping);
-        $objShippingMethodStep = new ShippingMethod($this->objCheckoutModule);
-        $arrSteps[] = $objShippingMethodStep;
+        $isotopeShipping = $framework->getAdapter(Flat::class)->findByPk($this->iso_shipping_modules);
+        $order->setShippingMethod($isotopeShipping);
+        $shippingMethodStep = new ShippingMethod($this->objCheckoutModule);
+        $steps[] = $shippingMethodStep;
 
-        $arrCheckoutInfo['shipping_method'] = $objShippingMethodStep->review()['shipping_method'];
+        $checkoutInfo['shipping_method'] = $shippingMethodStep->review()['shipping_method'];
 
         // add all the checkout info to the order
-        $objOrder->checkout_info = $arrCheckoutInfo;
+        $order->checkout_info = $checkoutInfo;
 
-        $objOrder->notes = $objSubmission->notes;
+        $order->notes = $submission->notes;
 
         //... restore the former cart again
-        $framework->getAdapter(Isotope::class)->setCart($objCartTmp);
+        $framework->getAdapter(Isotope::class)->setCart($cartTmp);
 
-        $objOrder->nc_notification = $this->nc_notification;
-        $objOrder->email_data = $this->getNotificationTokensFromSteps($arrSteps, $objOrder);
+        $order->nc_notification = $this->nc_notification;
+        $order->email_data = $this->getNotificationTokensFromSteps($steps, $order);
 
         // !HOOK: pre-process checkout
         if (isset($GLOBALS['ISO_HOOKS']['preCheckout']) && \is_array($GLOBALS['ISO_HOOKS']['preCheckout'])) {
             foreach ($GLOBALS['ISO_HOOKS']['preCheckout'] as $callback) {
                 $this->import($callback[0]);
 
-                if ($this->{$callback[0]}->{$callback[1]}($objOrder, $this->objCheckoutModule) === false) {
+                if ($this->{$callback[0]}->{$callback[1]}($order, $this->objCheckoutModule) === false) {
                     System::log('Callback '.$callback[0].'::'.$callback[1].'() cancelled checkout for Order ID '.$this->id, __METHOD__, TL_ERROR);
 
                     $this->objCheckoutModule->redirectToStep('failed');
@@ -426,9 +421,9 @@ class DirectCheckoutForm extends Form
             }
         }
 
-        $objOrder->lock();
-        $objOrder->checkout();
-        $objOrder->complete();
+        $order->lock();
+        $order->checkout();
+        $order->complete();
 
         if (\is_array($this->dca['config']['onsubmit_callback'])) {
             foreach ($this->dca['config']['onsubmit_callback'] as $key => $callback) {
@@ -462,15 +457,18 @@ class DirectCheckoutForm extends Form
     }
 
     // copy from Checkout.php
-    protected function getNotificationTokensFromSteps(array $arrSteps, IsotopeProductCollection $objOrder)
+    protected function getNotificationTokensFromSteps(array $steps, IsotopeProductCollection $order)
     {
-        $arrTokens = [];
+        $tokens = [];
 
         // Run trough all steps to collect checkout information
-        foreach ($arrSteps as $objModule) {
-            $arrTokens = array_merge($arrTokens, $objModule->getNotificationTokens($objOrder));
+        foreach ($steps as $modules) {
+            /** @var IsotopeCheckoutStep $module */
+            foreach ($modules as $module) {
+                $tokens = array_merge($tokens, $module->getNotificationTokens($order));
+            }
         }
 
-        return $arrTokens;
+        return $tokens;
     }
 }
