@@ -17,6 +17,8 @@ use Contao\StringUtil;
 use Contao\System;
 use Contao\Widget;
 use HeimrichHannot\RequestBundle\Component\HttpFoundation\Request;
+use HeimrichHannot\UtilsBundle\Container\ContainerUtil;
+use HeimrichHannot\UtilsBundle\Url\UrlUtil;
 use Isotope\Interfaces\IsotopeAttributeWithOptions;
 use Isotope\Isotope;
 use Isotope\Model\RequestCache;
@@ -43,7 +45,7 @@ class ProductFilterExtendedModule extends ProductFilter
         $container = System::getContainer();
 
         $this->framework = $container->get('contao.framework');
-        $this->request = $container->get('huh.request');
+        $this->request = $container->get(Request::class);
 
         parent::__construct($module, $column);
     }
@@ -55,7 +57,7 @@ class ProductFilterExtendedModule extends ProductFilter
      */
     public function generate()
     {
-        if (System::getContainer()->get('huh.utils.container')->isBackend()) {
+        if (System::getContainer()->get(ContainerUtil::class)->isBackend()) {
             $objTemplate = new \BackendTemplate('be_wildcard');
             $objTemplate->wildcard = '### ISOTOPE ECOMMERCE: PRODUCT FILTERS EXTENDED ###';
 
@@ -91,7 +93,7 @@ class ProductFilterExtendedModule extends ProductFilter
 
             $this->Template->id = $this->id;
             $this->Template->formId = 'iso_filter_'.$this->id;
-            $this->Template->action = ampersand(System::getContainer()->get('huh.utils.url')->removeQueryString($params));
+            $this->Template->action = ampersand(System::getContainer()->get(UrlUtil::class)->removeQueryString($params));
             $this->Template->actionClear = ampersand(strtok(Environment::get('request'), '?')).'?keywords='.$this->request->getGet('keywords');
             $this->Template->clearLabel = $GLOBALS['TL_LANG']['MSC']['clearFiltersLabel'];
             $this->Template->slabel = $GLOBALS['TL_LANG']['MSC']['submitLabel'];

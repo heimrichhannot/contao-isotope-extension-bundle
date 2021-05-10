@@ -299,6 +299,7 @@ class DirectCheckoutForm extends Form
     protected function processForm()
     {
         $framework = System::getContainer()->get('contao.framework');
+
         // get a product collection (aka cart)
         global $objPage;
 

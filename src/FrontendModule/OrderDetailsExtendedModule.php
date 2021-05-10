@@ -64,7 +64,7 @@ class OrderDetailsExtendedModule extends OrderDetails
         }
 
         // Order belongs to a member but not logged in
-        if (!$this->iso_show_all_orders || $container->get('huh.utils.container')->isFrontend() && $this->iso_loginRequired && $order->member > 0 && FE_USER_LOGGED_IN !== true) {
+        if (!$this->iso_show_all_orders || $container->get(ContainerUtil::class)->isFrontend() && $this->iso_loginRequired && $order->member > 0 && FE_USER_LOGGED_IN !== true) {
             global $objPage;
 
             $objHandler = new $GLOBALS['TL_PTY']['error_403']();

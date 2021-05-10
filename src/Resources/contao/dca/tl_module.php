@@ -317,7 +317,7 @@ $fields = [
                     'default' => 'iso_direct_checkout_product,iso_use_quantity',
                 ],
                 'fields'   => [
-                    'iso_direct_checkout_product' => [
+                    'product' => [
                         'label'            => &$GLOBALS['TL_LANG']['tl_module']['iso_direct_checkout_product'],
                         'exclude'          => true,
                         'inputType'        => 'select',
@@ -327,13 +327,16 @@ $fields = [
                             'tl_class'           => 'long clr',
                             'chosen'             => true,
                             'includeBlankOption' => true,
+                            'groupStyle'         => 'width: 97%;'
                         ],
                     ],
-                    'iso_use_quantity'            => [
+                    'useQuantity'            => [
                         'label'     => &$GLOBALS['TL_LANG']['tl_module']['iso_use_quantity'],
                         'exclude'   => true,
                         'inputType' => 'checkbox',
-                        'eval'      => ['tl_class' => 'w50'],
+                        'eval'      => [
+                            'tl_class'   => 'w50',
+                        ],
                     ],
                 ],
             ],
@@ -350,7 +353,7 @@ $fields = [
                     'default' => 'iso_direct_checkout_product_type,iso_use_quantity',
                 ],
                 'fields'   => [
-                    'iso_direct_checkout_product_type' => [
+                    'productType' => [
                         'label'      => &$GLOBALS['TL_LANG']['tl_module']['iso_direct_checkout_product_type'],
                         'exclude'    => true,
                         'inputType'  => 'select',
@@ -360,14 +363,18 @@ $fields = [
                             'tl_class'           => 'long clr',
                             'chosen'             => true,
                             'includeBlankOption' => true,
+                            'groupStyle'         => 'width: 97%;'
+
                         ],
                         'sql'        => "int(10) unsigned NOT NULL default '0'",
                     ],
-                    'iso_use_quantity'                 => [
+                    'useQuantity'                 => [
                         'label'     => &$GLOBALS['TL_LANG']['tl_module']['iso_use_quantity'],
                         'exclude'   => true,
                         'inputType' => 'checkbox',
-                        'eval'      => ['tl_class' => 'w50'],
+                        'eval'      => [
+                            'tl_class'   => 'w50',
+                        ],
                         'sql'       => "char(1) NOT NULL default ''",
                     ]
                 ],
