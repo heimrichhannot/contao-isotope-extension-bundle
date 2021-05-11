@@ -43,18 +43,6 @@ $GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_modifyShippingPr
 ];
 
 /**
- * Hooks
- */
-$GLOBALS['TL_HOOKS']['postDownload']['huhIsotopeExtensionBundle_countDownload']      = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Contao\PostDownloadListener::class,
-    '__invoke'
-];
-$GLOBALS['TL_HOOKS']['loadDataContainer']['huhIsotopeExtensionBundle_addMetaFields'] = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Contao\LoadDataContainerListener::class,
-    '__invoke'
-];
-
-/**
  * Frontend modules
  */
 $GLOBALS['FE_MOD']['isotope_extension_bundle'] = [

@@ -6,8 +6,6 @@ $lang = &$GLOBALS['TL_LANG']['MSC'];
  * Buttons
  */
 $lang['buttonLabel']['downloadSingleProduct'] = 'Download';
-// TODO: needed?
-//$lang['buttonLabel']['edit_booking_plan']     = 'Belegungsplan';
 $lang['set']                                  = 'Set';
 
 /**

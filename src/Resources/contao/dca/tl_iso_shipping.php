@@ -2,8 +2,14 @@
 
 $dca = &$GLOBALS['TL_DCA']['tl_iso_shipping'];
 
+/**
+ * Palettes
+ */
 $dca['palettes']['flat']  = str_replace('product_types_condition', 'product_types_condition,skipProducts', $dca['palettes']['flat']);
 
+/**
+ * Fields
+ */
 $dca['fields']['skipProducts'] = [
     'exclude'          => true,
     'inputType'        => 'select',

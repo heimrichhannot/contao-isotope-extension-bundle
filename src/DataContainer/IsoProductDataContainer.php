@@ -9,15 +9,34 @@
 namespace HeimrichHannot\IsotopeExtensionBundle\DataContainer;
 
 use Contao\CoreBundle\ServiceAnnotation\Callback;
+use HeimrichHannot\UtilsBundle\Dca\DcaUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 
 class IsoProductDataContainer
 {
     protected ModelUtil $modelUtil;
+    protected DcaUtil   $dcaUtil;
 
-    public function __construct(ModelUtil $modelUtil)
+    public function __construct(ModelUtil $modelUtil, DcaUtil $dcaUtil)
     {
         $this->modelUtil = $modelUtil;
+        $this->dcaUtil = $dcaUtil;
+    }
+
+    /**
+     * @Callback(table="tl_iso_product_data", target="config.onsubmit")
+     */
+    public function setDateAdded($dc)
+    {
+        $this->dcaUtil->setDateAdded($dc);
+    }
+
+    /**
+     * @Callback(table="tl_iso_product_data", target="config.oncopy")
+     */
+    public function setDateAddedOnCopy($insertId, $dc)
+    {
+        $this->dcaUtil->setDateAddedOnCopy($insertId, $dc);
     }
 
     /**

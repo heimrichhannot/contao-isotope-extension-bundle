@@ -19,41 +19,37 @@ $dca['subpalettes']['overrideStockShopConfig'] = 'skipStockValidation,skipStockE
 /**
  * Fields
  */
-$dca['fields']['sendOrderNotification'] = [
-    'label'     => &$GLOBALS['TL_LANG']['tl_iso_producttype']['sendOrderNotification'],
-    'exclude'   => true,
-    'inputType' => 'checkbox',
-    'eval'      => ['tl_class' => 'w50', 'submitOnChange' => true],
-    'sql'       => "char(1) NOT NULL default ''",
+$fields = [
+    'sendOrderNotification'   => [
+        'exclude'   => true,
+        'inputType' => 'checkbox',
+        'eval'      => ['tl_class' => 'w50', 'submitOnChange' => true],
+        'sql'       => "char(1) NOT NULL default ''",
+    ],
+    'orderNotification'       => [
+        'exclude'          => true,
+        'inputType'        => 'select',
+        'eval'             => ['includeBlankOption' => true, 'chosen' => true, 'tl_class' => 'w50', 'mandatory' => true],
+        'sql'              => "int(10) unsigned NOT NULL default '0'",
+    ],
+    'removeOtherProducts'     => [
+        'exclude'   => true,
+        'inputType' => 'checkbox',
+        'eval'      => ['tl_class' => 'w50'],
+        'sql'       => "char(1) NOT NULL default ''",
+    ],
+    'overrideStockShopConfig' => [
+        'exclude'   => true,
+        'inputType' => 'checkbox',
+        'eval'      => ['tl_class' => 'w50', 'submitOnChange' => true],
+        'sql'       => "char(1) NOT NULL default ''",
+    ]
 ];
 
-$dca['fields']['orderNotification'] = [
-    'label'            => &$GLOBALS['TL_LANG']['tl_iso_producttype']['orderNotification'],
-    'exclude'          => true,
-    'inputType'        => 'select',
-    'options_callback' => ['NotificationCenter\tl_module', 'getNotificationChoices'],
-    'eval'             => ['includeBlankOption' => true, 'chosen' => true, 'tl_class' => 'w50', 'mandatory' => true],
-    'sql'              => "int(10) unsigned NOT NULL default '0'",
-];
+$dca['fields'] = array_merge(is_array($dca['fields']) ? $dca['fields'] : [], $fields);
 
-$dca['fields']['removeOtherProducts'] = [
-    'label'     => &$GLOBALS['TL_LANG']['tl_iso_producttype']['removeOtherProducts'],
-    'exclude'   => true,
-    'inputType' => 'checkbox',
-    'eval'      => ['tl_class' => 'w50'],
-    'sql'       => "char(1) NOT NULL default ''",
-];
-
-$dca['fields']['overrideStockShopConfig'] = [
-    'label'     => &$GLOBALS['TL_LANG']['tl_iso_producttype']['overrideStockShopConfig'],
-    'exclude'   => true,
-    'inputType' => 'checkbox',
-    'eval'      => ['tl_class' => 'w50', 'submitOnChange' => true],
-    'sql'       => "char(1) NOT NULL default ''",
-];
-
-\Controller::loadDataContainer('tl_iso_config');
-\System::loadLanguageFile('tl_iso_config');
+\Contao\Controller::loadDataContainer('tl_iso_config');
+\Contao\System::loadLanguageFile('tl_iso_config');
 
 $dca['fields']['skipStockValidation']                     = $GLOBALS['TL_DCA']['tl_iso_config']['fields']['skipStockValidation'];
 $dca['fields']['skipStockEdit']                           = $GLOBALS['TL_DCA']['tl_iso_config']['fields']['skipStockEdit'];

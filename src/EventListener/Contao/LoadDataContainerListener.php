@@ -8,8 +8,12 @@
 
 namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Contao;
 
+use Contao\CoreBundle\ServiceAnnotation\Hook;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\ProductDataManager;
 
+/**
+ * @Hook("loadDataContainer")
+ */
 class LoadDataContainerListener
 {
     protected ProductDataManager $productDataManager;

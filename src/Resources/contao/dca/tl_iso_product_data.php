@@ -4,12 +4,6 @@ $GLOBALS['TL_DCA']['tl_iso_product_data'] = [
     'config'   => [
         'dataContainer'     => 'Table',
         'enableVersioning'  => false,
-        'onsubmit_callback' => [
-            ['huh.utils.dca', 'setDateAdded'],
-        ],
-        'oncopy_callback'   => [
-            ['huh.utils.dca', 'setDateAddedOnCopy'],
-        ],
         'sql'               => [
             'keys' => [
                 'id' => 'primary',
@@ -42,8 +36,8 @@ $GLOBALS['TL_DCA']['tl_iso_product_data'] = [
             'eval' => ['skipProductPalette' => true],
         ],
         'tstamp'                  => [
-            'sql'   => "int(10) unsigned NOT NULL default '0'",
-            'eval'  => ['skipProductPalette' => true],
+            'sql'  => "int(10) unsigned NOT NULL default '0'",
+            'eval' => ['skipProductPalette' => true],
         ],
         'dateAdded'               => [
             'label'   => &$GLOBALS['TL_LANG']['MSC']['dateAdded'],
@@ -53,25 +47,25 @@ $GLOBALS['TL_DCA']['tl_iso_product_data'] = [
             'sql'     => "int(10) unsigned NOT NULL default '0'",
         ],
         'initialStock'            => [
-            'label'         => &$GLOBALS['TL_LANG']['tl_iso_product']['initialStock'],
-            'inputType'     => 'text',
-            'eval'          => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
-            'attributes'    => ['legend' => 'inventory_legend'],
-            'sql'           => "varchar(255) NOT NULL default ''"
+            'label'      => &$GLOBALS['TL_LANG']['tl_iso_product']['initialStock'],
+            'inputType'  => 'text',
+            'eval'       => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
+            'attributes' => ['legend' => 'inventory_legend'],
+            'sql'        => "varchar(255) NOT NULL default ''"
         ],
         'stock'                   => [
-            'label'         => &$GLOBALS['TL_LANG']['tl_iso_product']['stock'],
-            'inputType'     => 'text',
-            'eval'          => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
-            'attributes'    => ['legend' => 'inventory_legend', 'fe_sorting' => true],
-            'sql'           => "varchar(255) NOT NULL default ''",
+            'label'      => &$GLOBALS['TL_LANG']['tl_iso_product']['stock'],
+            'inputType'  => 'text',
+            'eval'       => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
+            'attributes' => ['legend' => 'inventory_legend', 'fe_sorting' => true],
+            'sql'        => "varchar(255) NOT NULL default ''",
         ],
         'setQuantity'             => [
-            'label'         => &$GLOBALS['TL_LANG']['tl_iso_product']['setQuantity'],
-            'inputType'     => 'text',
-            'eval'          => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
-            'attributes'    => ['legend' => 'inventory_legend', 'fe_sorting' => true],
-            'sql'           => "varchar(255) NOT NULL default ''",
+            'label'      => &$GLOBALS['TL_LANG']['tl_iso_product']['setQuantity'],
+            'inputType'  => 'text',
+            'eval'       => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
+            'attributes' => ['legend' => 'inventory_legend', 'fe_sorting' => true],
+            'sql'        => "varchar(255) NOT NULL default ''",
         ],
         'releaseDate'             => [
             'label'      => &$GLOBALS['TL_LANG']['tl_iso_product']['releaseDate'],
@@ -128,10 +122,9 @@ $GLOBALS['TL_DCA']['tl_iso_product_data'] = [
     ],
 ];
 
-// TODO: real fields, no references!
 \Contao\Controller::loadDataContainer('tl_iso_config');
 
-$dca                                                                    = &$GLOBALS['TL_DCA']['tl_iso_product_data'];
+$dca = &$GLOBALS['TL_DCA']['tl_iso_product_data'];
 
 $dca['fields']['skipStockValidation']                                   = $GLOBALS['TL_DCA']['tl_iso_config']['fields']['skipStockValidation'];
 $dca['fields']['skipStockValidation']['attributes']                     = ['legend' => 'shipping_legend'];

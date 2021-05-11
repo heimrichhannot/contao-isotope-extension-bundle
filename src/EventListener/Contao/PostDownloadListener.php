@@ -9,9 +9,13 @@
 namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Contao;
 
 use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\CoreBundle\ServiceAnnotation\Hook;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\ProductDataManager;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 
+/**
+ * @Hook("postDownload")
+ */
 class PostDownloadListener
 {
     protected ProductDataManager $productDataManager;

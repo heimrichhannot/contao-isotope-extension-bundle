@@ -21,7 +21,7 @@ $lang['iso_direct_checkout_listingSortDirection']         = ['Sortierrichtung', 
 $lang['iso_use_notes'] = ['Bemerkungsfeld hinzufügen', 'Wählen Sie eine Option aus, um dem Bestellformular ein Bemerkungsfeld hinzuzufügen.'];
 $lang['iso_note']      = ['Bemerkungen', ''];
 
-$lang['iso_useAgb']         = ['Agb-Feld verwenden', 'Wählen Sie diese Option, dem Formular ein Feld für die Bestätigung der AGB hinzugefügt werden soll.'];
+$lang['iso_useAgb']  = ['Agb-Feld verwenden', 'Wählen Sie diese Option, dem Formular ein Feld für die Bestätigung der AGB hinzugefügt werden soll.'];
 $lang['iso_agbText'] = ['Agb-Text', 'Tragen Sie hier den Text ein, der für das Agb-Feld genutzt werden soll.'];
 
 $lang['iso_useConsent']  = ['Einverständniserklärung-Feld verwenden', 'Wählen Sie diese Option, dem Formular ein Feld für die Bestätigung der Einverständniserklärung hinzugefügt werden soll.'];

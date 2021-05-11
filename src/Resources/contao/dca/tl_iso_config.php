@@ -11,13 +11,13 @@ $dca['palettes']['default'] = str_replace('{analytics_legend}', '{stock_legend},
  * Fields
  */
 $fields = [
-    'skipStockValidation' => [
+    'skipStockValidation'                     => [
         'exclude'   => true,
         'inputType' => 'checkbox',
         'eval'      => ['tl_class' => 'w50'],
         'sql'       => "char(1) NOT NULL default ''",
     ],
-    'skipStockEdit' => [
+    'skipStockEdit'                           => [
         'exclude'   => true,
         'inputType' => 'checkbox',
         'eval'      => ['tl_class' => 'w50'],
@@ -29,17 +29,17 @@ $fields = [
         'eval'      => ['tl_class' => 'w50'],
         'sql'       => "char(1) NOT NULL default ''",
     ],
-    'skipSets' => [
+    'skipSets'                                => [
         'exclude'   => true,
         'inputType' => 'checkbox',
         'eval'      => ['tl_class' => 'w50'],
         'sql'       => "char(1) NOT NULL default ''",
     ],
-    'stockIncreaseOrderStates' => [
-        'exclude'          => true,
-        'inputType'        => 'select',
-        'eval'             => ['chosen' => true, 'multiple' => true, 'tl_class' => 'w50'],
-        'sql'              => "blob NULL",
+    'stockIncreaseOrderStates'                => [
+        'exclude'   => true,
+        'inputType' => 'select',
+        'eval'      => ['chosen' => true, 'multiple' => true, 'tl_class' => 'w50'],
+        'sql'       => "blob NULL",
     ],
 ];
 
