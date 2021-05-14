@@ -3,34 +3,21 @@
 /**
  * Isotope Hooks
  */
-$GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_validateStockCheckout']                    = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class,
-    'validateStockCheckout'
-];
-$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_validateStockCheckout']                   = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class,
-    'validateStockCheckout'
-];
-$GLOBALS['ISO_HOOKS']['addProductToCollection']['huhIsotopeExtensionBundle_validateStockCollectionAdd']    = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\AddProductToCollectionListener::class,
-    '__invoke'
-];
-$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_sendOrderNotification']                   = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class,
-    'sendOrderNotification'
-];
-$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_setSetQuantity']                          = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class,
-    'setSetQuantity'
-];
-$GLOBALS['ISO_HOOKS']['updateItemInCollection']['huhIsotopeExtensionBundle_validateStockCollectionUpdate'] = [
-    HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\UpdateItemInCollectionListener::class,
-    '__invoke'
-];
-$GLOBALS['ISO_HOOKS']['buttons'][]                                                                         = [
-    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\ButtonsListener::class,
-    'addDownloadSingleProductButton'
-];
+$GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_validateStockCheckout']                    =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class, 'validateStockCheckout'];
+$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_validateStockCheckout']                   =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'validateStockCheckout'];
+$GLOBALS['ISO_HOOKS']['addProductToCollection']['huhIsotopeExtensionBundle_validateStockCollectionAdd']    =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\AddProductToCollectionListener::class, '__invoke'];
+$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_sendOrderNotification']                   =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'sendOrderNotification'];
+$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_setSetQuantity']                          =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'setSetQuantity'];
+$GLOBALS['ISO_HOOKS']['updateItemInCollection']['huhIsotopeExtensionBundle_validateStockCollectionUpdate'] =
+    [HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\UpdateItemInCollectionListener::class, '__invoke'];
+$GLOBALS['ISO_HOOKS']['buttons'][]                                                                         =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\ButtonsListener::class, 'addDownloadSingleProductButton'];
+
 // TODO - really needed!?
 //$GLOBALS['ISO_HOOKS']['buttons'][]                                               = ['HeimrichHannot\IsotopeExtensionBundle\Backend\IsotopePlus', 'defaultButtons'];
 $GLOBALS['ISO_HOOKS']['preOrderStatusUpdate']['huhIsotopeExtensionBundle_updateStock'] = [
