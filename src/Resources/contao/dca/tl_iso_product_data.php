@@ -119,6 +119,12 @@ $GLOBALS['TL_DCA']['tl_iso_product_data'] = [
             'eval'      => ['tl_class' => 'w50', 'rgxp' => 'digit'],
             'sql'       => "int(10) unsigned NOT NULL",
         ],
+        'relevance'               => [
+            'label'     => &$GLOBALS['TL_LANG']['tl_iso_product']['relevance'],
+            'inputType' => 'text',
+            'eval'      => ['tl_class' => 'w50', 'rgxp' => 'digit'],
+            'sql'       => "int(10) unsigned NOT NULL",
+        ],
     ],
 ];
 
