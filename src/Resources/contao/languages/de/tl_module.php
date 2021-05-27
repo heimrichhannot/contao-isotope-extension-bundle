@@ -5,6 +5,12 @@ $lang = &$GLOBALS['TL_LANG']['tl_module'];
 /**
  * Fields
  */
+$lang['iso_description']     = ['Beschreibung', 'Geben Sie hier eine Beschreibung des Moduls ein.'];
+$lang['iso_show_all_orders'] = [
+    'Alle Bestellungen anzeigen',
+    'Wählen Sie diese Option, wenn die anzuzeigenden Bestellungen nicht nur auf die des aktuell eingeloggten Mitglieds beschränkt sein sollen.',
+];
+
 $lang['iso_direct_checkout_product_mode']                 = ['Produktmodus', 'Wählen Sie aus, ob ein bestimmtes Produkt oder ein Produkt eines speziellen Produkttyps auswählbar sein soll.'];
 $lang['iso_direct_checkout_product_mode']['product']      = 'Produkt';
 $lang['iso_direct_checkout_product_mode']['product_type'] = 'Produkttyp';
@@ -26,6 +32,12 @@ $lang['iso_agbText'] = ['Agb-Text', 'Tragen Sie hier den Text ein, der für das 
 
 $lang['iso_useConsent']  = ['Einverständniserklärung-Feld verwenden', 'Wählen Sie diese Option, dem Formular ein Feld für die Bestätigung der Einverständniserklärung hinzugefügt werden soll.'];
 $lang['iso_consentText'] = ['Einverständniserklärung-Text', 'Tragen Sie hier den Text ein, der für das Einverständniserklärung-Feld genutzt werden soll.'];
+
+$lang['iso_price_filter']         = ['Produktpreisfilter', 'Wählen Sie eine Option aus, um eine Filterung bzgl. des Produktpreises zu aktivieren.'];
+$lang['iso_price_filter']['paid'] = 'Nur kostenpflichtig';
+$lang['iso_price_filter']['free'] = 'Nur kostenlos';
+$lang['iso_producttype_filter']   = ['Produkttypfilter', 'Wählen Sie eine Option aus, um eine Filterung bzgl. des Produkttyps zu aktivieren.'];
+
 
 /**
  * Misc

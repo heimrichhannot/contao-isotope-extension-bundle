@@ -1,0 +1,10 @@
+<div class="<?= $this->class; ?> <?php if ($this->active): ?>active <?php endif; ?>block"<?= $this->cssID; ?><?php if ($this->style): ?> style="<?= $this->style; ?>"<?php endif; ?>>
+    <?php if ($this->headline): ?>
+    <<?= $this->hl; ?>><?= $this->headline; ?></<?= $this->hl; ?>>
+<?php endif; ?>
+
+<a href="<?= $this->href; ?>">
+    <span class="badge" data-quantity="{{cart::quantity}}">{{cart::quantity}}</span>
+    <?= $GLOBALS['TL_LANG']['MSC']['cartBT'] ?>
+</a>
+</div>

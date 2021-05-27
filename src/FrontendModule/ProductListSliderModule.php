@@ -40,8 +40,8 @@ class ProductListSliderModule extends ProductListExtendedModule
             throw new \Exception('For the product list slider to work you need to install heimrichhannot/contao-tiny-slider-bundle in version ^1.16.');
         }
 
-        if (null !== ($sliderConfig = System::getContainer()->get(ModelUtil::class)->findModelInstanceByPk('tl_tiny_slider_config', $this->sliderConfig))) {
-            $this->Template->class .= ' '.System::getContainer()->get(Config::class)->getTinySliderCssClassFromModel($sliderConfig);
+        if (null !== ($sliderConfig = System::getContainer()->get(ModelUtil::class)->findModelInstanceByPk('tl_tiny_slider_config', $this->tinySliderConfig))) {
+            $this->Template->class .= ' tiny-slider '.System::getContainer()->get(Config::class)->getTinySliderCssClassFromModel($sliderConfig);
             $this->Template->attributes .= System::getContainer()->get(Config::class)->getAttributes($sliderConfig);
         }
 

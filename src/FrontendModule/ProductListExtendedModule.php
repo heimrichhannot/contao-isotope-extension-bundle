@@ -36,6 +36,8 @@ class ProductListExtendedModule extends ProductList
 {
     const TYPE = 'iso_product_list_extended';
 
+    protected $strTemplate = 'mod_iso_productlist_extended';
+
     /**
      * @var ContaoFramework
      */
@@ -77,9 +79,9 @@ class ProductListExtendedModule extends ProductList
 
         $container = System::getContainer();
 
-        $this->framework = $container->get(ContaoFramework::class);
+        $this->framework = $container->get('contao.framework');
         $this->request = $container->get(Request::class);
-        $this->tokenManager = $container->get(CsrfTokenManager::class);
+        $this->tokenManager = $container->get('contao.csrf.token_manager');
         $this->token = $container->getParameter('contao.csrf_token_name');
         $this->listManager = System::getContainer()->get(ProductListManager::class);
     }
@@ -149,8 +151,6 @@ class ProductListExtendedModule extends ProductList
             $this->getProducts($pageId, $where, $values, $sorting, $categories);
         }
 
-        // unset Isotope::defaultButtons because of performance reasons
-        unset($GLOBALS['ISO_HOOKS']['buttons'][0]);
         $buffer = $this->parseProducts();
 
         // HOOK: to add any product field or attribute to mod_iso_productlist template

@@ -16,7 +16,7 @@ $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductFi
 
 $dca['palettes']['iso_productlist'] = str_replace('{config_legend}', '{config_legend},iso_description', $dca['palettes']['iso_productlist']);
 
-$dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListExtendedModule::class] =
+$dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListExtendedModule::TYPE] =
     '{title_legend},name,headline,type;' .
     '{config_legend},iso_description,numberOfItems,perPage,iso_category_scope,iso_list_where,iso_filterModules,iso_price_filter,iso_newFilter,iso_producttype_filter,iso_listingSortField,iso_listingSortDirection;' .
     '{redirect_legend},iso_addProductJumpTo,iso_jump_first;{reference_legend:hide},defineRoot;' .
@@ -41,7 +41,7 @@ $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\OrderDeta
 );
 
 $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListSliderModule::TYPE] = str_replace(
-    'iso_description', 'slickConfig,iso_description', $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListExtendedModule::TYPE]
+    'iso_description', 'tinySliderConfig,iso_description', $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListExtendedModule::TYPE]
 );
 
 /**
@@ -254,13 +254,6 @@ $fields = [
         'inputType' => 'checkbox',
         'eval'      => ['submitOnChange' => true, 'tl_class' => 'clr'],
         'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_buttons'                       => [
-        'exclude'   => true,
-        'inputType' => 'checkboxWizard',
-        'default'   => ['add_to_cart'],
-        'eval'      => ['multiple' => true, 'tl_class' => 'clr'],
-        'sql'       => "blob NULL",
     ],
     'iso_description'                   => [
         'exclude'   => true,

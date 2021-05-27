@@ -9,7 +9,7 @@ $lang['isotope_extension_bundle']                                               
 $lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductFilterExtendedModule::TYPE][0]                  = 'Produktfilter (erweitert)';
 $lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductFilterExtendedModule::TYPE][1]                  = 'Erstellt individuelle Filter für Isotope wie einen Kategorienbaum oder Produktattribut-Filter.';
 $lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListExtendedModule::TYPE][0]                    = 'Produktliste (erweitert)';
-$lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListSliderModule::TYPE][0]                      = 'Produktliste Slick';
+$lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListSliderModule::TYPE][0]                      = 'Produktliste (Slider)';
 $lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\ProductListSliderModule::TYPE][1]                      = 'Die Produktliste als Tiny-Slider';
 $lang[\HeimrichHannot\IsotopeExtensionBundle\Controller\FrontendModule\IsoStockReportModuleController::TYPE][0]    = 'Bericht - Bestandsauswertung';
 $lang[\HeimrichHannot\IsotopeExtensionBundle\Controller\FrontendModule\IsoStockReportModuleController::TYPE][1]    = 'Zeigt noch vorhandene Bestände an';

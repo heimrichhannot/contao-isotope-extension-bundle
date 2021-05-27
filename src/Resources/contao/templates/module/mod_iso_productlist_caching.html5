@@ -1,0 +1,15 @@
+<!-- indexer::stop -->
+<div class="<?= $this->class; ?> block productListCaching"<?= $this->cssID; ?><?php if ($this->style): ?> style="<?= $this->style; ?>"<?php endif; ?> data-load="true">
+    <?php if ($this->headline): ?>
+
+    <<?= $this->hl; ?>><?= $this->headline; ?></<?= $this->hl; ?>>
+<?php endif; ?>
+
+<p class="message loading"><?= $this->message; ?></p>
+
+<noscript>
+    <p class="message error"><?= $this->noscript; ?></p>
+</noscript>
+
+</div>
+<!-- indexer::continue -->

@@ -8,7 +8,7 @@
 
 namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope;
 
-use Contao\CoreBundle\Exception\RedirectResponseException;
+use Contao\Controller;
 use HeimrichHannot\UtilsBundle\File\FileUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 use HeimrichHannot\UtilsBundle\Url\UrlUtil;
@@ -49,6 +49,6 @@ class ButtonsListener
 
         // TODO count downloads
         // start downloading the file (protected folders also supported)
-        throw new RedirectResponseException($this->urlUtil->addQueryString('file='.$path));
+        Controller::sendFileToBrowser($path);
     }
 }
