@@ -5,4 +5,4 @@ services:
     public: true
 
   HeimrichHannot\IsotopeExtensionBundle\:
-    resource: '../../{Attribute,DataContainer,EventListener,Manager}/*'
+    resource: '../../{Attribute,Controller,DataContainer,EventListener,Manager}/*'

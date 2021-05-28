@@ -35,7 +35,7 @@ class IsoCartLinkModuleController extends AbstractFrontendModuleController
 
     protected function getResponse(Template $template, ModuleModel $module, Request $request): ?Response
     {
-        if (null === ($target = $this->modelUtil->findModelInstanceByPk('tl_', $module->jumpTo))) {
+        if (null === ($target = $this->modelUtil->findModelInstanceByPk('tl_page', $module->jumpTo))) {
             return new Response('');
         }
 
