@@ -2,6 +2,10 @@
 
 This bundle offers additional functionality for the isotope ecommerce system.
 
+## Migration from contao-isotope-bundle
+
+see UPGRADE.md
+
 ## Features
 
 ### Stock management and validation (initialStock, stock, setQuantity, maxOrderSize)
