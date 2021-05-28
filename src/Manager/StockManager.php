@@ -9,9 +9,9 @@
 namespace HeimrichHannot\IsotopeExtensionBundle\Manager;
 
 use Contao\Message;
+use Contao\Model;
 use HeimrichHannot\IsotopeExtensionBundle\Attribute\MaxOrderSizeAttribute;
 use HeimrichHannot\IsotopeExtensionBundle\Attribute\StockAttribute;
-use HeimrichHannot\IsotopeExtensionBundle\Model\ProductDataModel;
 use HeimrichHannot\UtilsBundle\Container\ContainerUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 use Isotope\Interfaces\IsotopeProduct;
@@ -26,10 +26,6 @@ class StockManager
 {
     protected ModelUtil $modelUtil;
     /**
-     * @var ProductDataManager
-     */
-    private $productDataManager;
-    /**
      * @var StockAttribute
      */
     private $stockAttribute;
@@ -43,13 +39,11 @@ class StockManager
     private $containerUtil;
 
     public function __construct(
-        ProductDataManager $productDataManager,
         StockAttribute $stockAttribute,
         MaxOrderSizeAttribute $maxOrderSizeAttribute,
         ContainerUtil $containerUtil,
         ModelUtil $modelUtil
     ) {
-        $this->productDataManager = $productDataManager;
         $this->stockAttribute = $stockAttribute;
         $this->maxOrderSizeAttribute = $maxOrderSizeAttribute;
         $this->containerUtil = $containerUtil;
@@ -72,10 +66,9 @@ class StockManager
             $quantity = 1;
         }
 
-        $productData = $this->productDataManager->getProductData($product->id);
-        $quantityTotal = $this->getTotalCartQuantity($quantity, $productData, $cartItem, $setQuantity);
+        $quantityTotal = $this->getTotalCartQuantity($quantity, $product, $cartItem, $setQuantity);
 
-        // Stock
+        // stock
         if (!$this->getOverridableStockProperty('skipStockValidation', $product)) {
             $validateStock = $this->stockAttribute->validate($product, $quantityTotal, $includeError);
 
@@ -182,7 +175,7 @@ class StockManager
      *
      * @return int|null
      */
-    public function getTotalCartQuantity(int $quantity, ProductDataModel $product, $cartItem = null, $setQuantity = null, Config $config = null)
+    public function getTotalCartQuantity(int $quantity, Model $product, $cartItem = null, $setQuantity = null, Config $config = null)
     {
         $intFinalSetQuantity = 1;
 

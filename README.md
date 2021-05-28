@@ -15,7 +15,7 @@ This bundle offers additional functionality for the isotope ecommerce system.
 
 ### Additional fields for products
 
-Adds various fields to isotope products. These are organized in a new entity `tl_iso_product_data` so that we can use the model to save it.
+Adds various fields to isotope products.
 
 ### Frontend modules
 

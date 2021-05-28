@@ -10,7 +10,6 @@ namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Contao;
 
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\ServiceAnnotation\Hook;
-use HeimrichHannot\IsotopeExtensionBundle\Manager\ProductDataManager;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 
 /**
@@ -18,13 +17,11 @@ use HeimrichHannot\UtilsBundle\Model\ModelUtil;
  */
 class PostDownloadListener
 {
-    protected ProductDataManager $productDataManager;
     protected ContaoFramework    $framework;
     protected ModelUtil          $modelUtil;
 
-    public function __construct(ProductDataManager $productDataManager, ContaoFramework $framework, ModelUtil $modelUtil)
+    public function __construct(ContaoFramework $framework, ModelUtil $modelUtil)
     {
-        $this->productDataManager = $productDataManager;
         $this->framework = $framework;
         $this->modelUtil = $modelUtil;
     }

@@ -11,21 +11,21 @@ namespace HeimrichHannot\IsotopeExtensionBundle\DataContainer;
 use Contao\CoreBundle\ServiceAnnotation\Callback;
 use Contao\DataContainer;
 use Contao\StringUtil;
-use HeimrichHannot\IsotopeExtensionBundle\Manager\ProductDataManager;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\StockManager;
+use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 
 class IsoProductCollectionContainer
 {
-    protected ModelUtil          $modelUtil;
-    protected StockManager       $stockManager;
-    protected ProductDataManager $productDataManager;
+    protected ModelUtil    $modelUtil;
+    protected StockManager $stockManager;
+    protected DatabaseUtil $databaseUtil;
 
-    public function __construct(ModelUtil $modelUtil, StockManager $stockManager, ProductDataManager $productDataManager)
+    public function __construct(ModelUtil $modelUtil, StockManager $stockManager, DatabaseUtil $databaseUtil)
     {
         $this->modelUtil = $modelUtil;
         $this->stockManager = $stockManager;
-        $this->productDataManager = $productDataManager;
+        $this->databaseUtil = $databaseUtil;
     }
 
     /**
@@ -54,14 +54,17 @@ class IsoProductCollectionContainer
         }
 
         foreach ($items as $item) {
-            $productData = $this->productDataManager->getProductData($item->product_id);
+            if (null === ($product = $this->modelUtil->findModelInstanceByPk('tl_iso_product', $item->product_id))) {
+                continue;
+            }
+
             $totalStockQuantity = $this->stockManager->getTotalCartQuantity(
-                $item->quantity, $productData, null, null, $config
+                $item->quantity, $product, null, null, $config
             );
 
             if ($totalStockQuantity) {
-                $productData->stock += $totalStockQuantity;
-                $productData->save();
+                $product->stock += $totalStockQuantity;
+                $product->save();
             }
         }
     }

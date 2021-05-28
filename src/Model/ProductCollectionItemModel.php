@@ -29,7 +29,7 @@ class ProductCollectionItemModel extends ProductCollectionItem
     public function getProduct($noCache = false)
     {
         if (!$this->productCache || $noCache) {
-            $this->productCache = ProductModel::findByPk($this->product_id);
+            $this->productCache = System::getContainer()->get(ModelUtil::class)->findModelInstanceByPk('tl_iso_product', $this->product_id);
         }
 
         return $this->productCache;

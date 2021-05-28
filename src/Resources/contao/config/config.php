@@ -22,7 +22,7 @@ $GLOBALS['ISO_HOOKS']['buttons'][]                                              
 //$GLOBALS['ISO_HOOKS']['buttons'][]                                               = ['HeimrichHannot\IsotopeExtensionBundle\Backend\IsotopePlus', 'defaultButtons'];
 $GLOBALS['ISO_HOOKS']['preOrderStatusUpdate']['huhIsotopeExtensionBundle_updateStock'] = [
     \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreOrderStatusUpdateListener::class,
-    '__invoke'
+    'updateStock'
 ];
 $GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_modifyShippingPrice']  = [
     \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class,
@@ -63,6 +63,4 @@ $GLOBALS['FE_MOD']['isotope_extension_bundle'] = [
 /**
  * Models
  */
-$GLOBALS['TL_MODELS']['tl_iso_product']                 = \HeimrichHannot\IsotopeExtensionBundle\Model\ProductModel::class;
-$GLOBALS['TL_MODELS']['tl_iso_product_data']            = \HeimrichHannot\IsotopeExtensionBundle\Model\ProductDataModel::class;
 $GLOBALS['TL_MODELS']['tl_iso_product_collection_item'] = \HeimrichHannot\IsotopeExtensionBundle\Model\ProductCollectionItemModel::class;
