@@ -1,15 +1,19 @@
 <?php $this->extend('block_tiny_slider'); ?>
 
-<?php $this->block('content'); ?>
-
-<?php if ($this->message): ?>
-    <p class="<?= $this->type; ?> message"><?= $this->message; ?></p>
-<?php endif; ?>
+<?php $this->block('intro'); ?>
 
 <?php if ($this->iso_description): ?>
     <div class="description">
         <?= $this->iso_description; ?>
     </div>
+<?php endif; ?>
+
+<?php $this->endblock(); ?>
+
+<?php $this->block('content'); ?>
+
+<?php if ($this->message): ?>
+    <p class="<?= $this->type; ?> message"><?= $this->message; ?></p>
 <?php endif; ?>
 
 <?php if (!empty($this->products)): ?>
