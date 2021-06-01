@@ -73,22 +73,22 @@ class IsoStockReportModuleController extends AbstractFrontendModuleController
 
                 switch ($percent) {
                     default:
-                        $strClass = 'badge-success';
+                        $strClass = 'bg-success';
 
                         break;
 
                     case $percent < 25:
-                        $strClass = 'badge-danger';
+                        $strClass = 'bg-danger';
 
                         break;
 
                     case $percent < 50:
-                        $strClass = 'badge-warning';
+                        $strClass = 'bg-warning';
 
                         break;
 
                     case $percent < 75:
-                        $strClass = 'badge-info';
+                        $strClass = 'bg-info';
 
                         break;
                 }

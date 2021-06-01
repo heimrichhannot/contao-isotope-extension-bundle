@@ -1,0 +1,4 @@
+huh:
+  list:
+    items:
+      - { name: iso_product_collection, class: HeimrichHannot\IsotopeExtensionBundle\ListItem\DefaultIsoProductCollectionItem }

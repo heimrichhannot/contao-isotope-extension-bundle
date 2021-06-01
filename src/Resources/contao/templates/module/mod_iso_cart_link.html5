@@ -1,10 +1,10 @@
-<div class="<?= $this->class; ?> <?php if ($this->active): ?>active <?php endif; ?>block"<?= $this->cssID; ?><?php if ($this->style): ?> style="<?= $this->style; ?>"<?php endif; ?>>
-    <?php if ($this->headline): ?>
-    <<?= $this->hl; ?>><?= $this->headline; ?></<?= $this->hl; ?>>
-<?php endif; ?>
+<?php $this->extend('block_unsearchable'); ?>
 
-<a href="<?= $this->href; ?>">
+<?php $this->block('content'); ?>
+
+<a href="<?= $this->href; ?>"<?php if ($this->active): ?> class="active"<?php endif; ?>>
     <span class="badge" data-quantity="{{cart::quantity}}">{{cart::quantity}}</span>
     <?= $GLOBALS['TL_LANG']['MSC']['cartBT'] ?>
 </a>
-</div>
+
+<?php $this->endblock(); ?>

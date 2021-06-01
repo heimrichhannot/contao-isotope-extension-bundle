@@ -59,7 +59,7 @@ class ProductFilterExtendedModule extends ProductFilter
     {
         if (System::getContainer()->get(ContainerUtil::class)->isBackend()) {
             $objTemplate = new \BackendTemplate('be_wildcard');
-            $objTemplate->wildcard = '### ISOTOPE ECOMMERCE: PRODUCT FILTERS EXTENDED ###';
+            $objTemplate->wildcard = '### ISOTOPE ECOMMERCE: PRODUCT FILTER EXTENDED ###';
 
             $objTemplate->title = $this->headline;
             $objTemplate->id = $this->id;

@@ -1,0 +1,14 @@
+huh.isotope:
+  collection:
+    table:
+      label:
+        orderDate: Bestelldatum
+        customer: Kunde
+        orderNumber: Bestellnummer
+        total: Gesamt
+        status: Status
+  order:
+    number: Bestellnummer
+    date: Bestelldatum
+    billingaddress: Rechnungsadresse
+    bookingdate: Buchungszeitraum
