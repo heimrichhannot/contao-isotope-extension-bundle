@@ -64,126 +64,6 @@ $fields = [
         'sql'       => "char(1) NOT NULL default ''",
     ],
     // filter, list
-    'iso_filterTpl'                     => [
-        'exclude'          => true,
-        'default'          => 'iso_filter_default',
-        'inputType'        => 'select',
-        'options_callback' => ['Isotope\Backend\Module\Callback', 'getFilterTemplates'],
-        'eval'             => ['mandatory' => true, 'tl_class' => 'w50', 'chosen' => true],
-        'sql'              => "varchar(64) NOT NULL default ''",
-    ],
-    'iso_hide_list'                     => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['tl_class' => 'w50'],
-        'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_category_scope'                => [
-        'exclude'   => true,
-        'inputType' => 'radio',
-        'default'   => 'current_category',
-        'options'   => [
-            'current_category',
-            'current_and_first_child',
-            'current_and_all_children',
-            'parent',
-            'product',
-            'article',
-            'global',
-        ],
-        'reference' => &$GLOBALS['TL_LANG']['tl_module']['iso_category_scope_ref'],
-        'eval'      => ['tl_class' => 'clr w50 w50h', 'helpwizard' => true],
-        'sql'       => "varchar(64) NOT NULL default ''",
-    ],
-    'iso_list_where'                    => [
-        'exclude'   => true,
-        'inputType' => 'text',
-        'eval'      => ['preserveTags' => true, 'maxlength' => 255, 'tl_class' => 'w50'],
-        'sql'       => "varchar(255) NOT NULL default ''",
-    ],
-    'iso_filterFields'                  => [
-        'exclude'          => true,
-        'inputType'        => 'checkboxWizard',
-        'options_callback' => ['Isotope\Backend\Module\Callback', 'getFilterFields'],
-        'eval'             => ['multiple' => true, 'tl_class' => 'clr w50 w50h'],
-        'sql'              => "blob NULL",
-    ],
-    'iso_filterHideSingle'              => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['tl_class' => 'w50 m12'],
-        'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_searchFields'                  => [
-        'exclude'          => true,
-        'inputType'        => 'checkboxWizard',
-        'options_callback' => ['Isotope\Backend\Module\Callback', 'getSearchFields'],
-        'eval'             => ['multiple' => true, 'tl_class' => 'clr w50 w50h'],
-        'sql'              => "blob NULL",
-    ],
-    'iso_searchAutocomplete'            => [
-        'exclude'          => true,
-        'inputType'        => 'select',
-        'options_callback' => ['Isotope\Backend\Module\Callback', 'getAutocompleteFields'],
-        'eval'             => ['tl_class' => 'w50', 'includeBlankOption' => true],
-        'sql'              => "varchar(255) NOT NULL default ''",
-    ],
-    'iso_sortingFields'                 => [
-        'exclude'          => true,
-        'inputType'        => 'checkboxWizard',
-        'options_callback' => ['Isotope\Backend\Module\Callback', 'getSortingFields'],
-        'eval'             => ['multiple' => true, 'tl_class' => 'clr w50 w50h'],
-        'sql'              => "blob NULL",
-    ],
-    'iso_enableLimit'                   => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['submitOnChange' => true, 'tl_class' => 'clr w50 m12'],
-        'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_listingSortField'              => [
-        'exclude'          => true,
-        'inputType'        => 'select',
-        'options_callback' => ['Isotope\Backend\Module\Callback', 'getSortingFields'],
-        'eval'             => ['includeBlankOption' => true, 'tl_class' => 'clr w50'],
-        'sql'              => "varchar(255) NOT NULL default ''",
-        'save_callback'    => [
-            ['Isotope\Backend', 'truncateProductCache'],
-        ],
-    ],
-    'iso_listingSortDirection'          => [
-        'exclude'   => true,
-        'default'   => 'DESC',
-        'inputType' => 'select',
-        'options'   => ['DESC', 'ASC'],
-        'reference' => &$GLOBALS['TL_LANG']['tl_module']['sortingDirection'],
-        'eval'      => ['tl_class' => 'w50'],
-        'sql'       => "varchar(8) NOT NULL default ''",
-    ],
-    'iso_includeMessages'               => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['doNotCopy' => true, 'tl_class' => 'w50'],
-        'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_filterModules'                 => [
-        'exclude'          => true,
-        'inputType'        => 'checkboxWizard',
-        'foreignKey'       => 'tl_module.name',
-        'options_callback' => ['Isotope\Backend\Module\Callback', 'getFilterModules'],
-        'eval'             => ['multiple' => true, 'tl_class' => 'clr w50 w50h'],
-        'sql'              => "blob NULL",
-        'relation'         => ['type' => 'hasMany', 'load' => 'lazy'],
-    ],
-    'iso_newFilter'                     => [
-        'exclude'   => true,
-        'inputType' => 'select',
-        'default'   => 'show_all',
-        'options'   => ['show_all', 'show_new', 'show_old'],
-        'reference' => &$GLOBALS['TL_LANG']['tl_module']['iso_newFilter'],
-        'eval'      => ['tl_class' => 'w50'],
-        'sql'       => "varchar(8) NOT NULL default ''",
-    ],
     'iso_price_filter'                  => [
         'exclude'   => true,
         'inputType' => 'select',
@@ -198,62 +78,6 @@ $fields = [
         'foreignKey' => 'tl_iso_producttype.name',
         'eval'       => ['tl_class' => 'clr', 'multiple' => true, 'chosen' => true, 'style' => 'width: 100%'],
         'sql'        => "blob NULL",
-    ],
-    'iso_addProductJumpTo'              => [
-        'exclude'     => true,
-        'inputType'   => 'pageTree',
-        'foreignKey'  => 'tl_page.title',
-        'eval'        => ['fieldType' => 'radio', 'tl_class' => 'clr'],
-        'explanation' => 'jumpTo',
-        'sql'         => "int(10) unsigned NOT NULL default '0'",
-        'relation'    => ['type' => 'hasOne', 'load' => 'lazy'],
-    ],
-    'iso_jump_first'                    => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['tl_class' => 'w50'],
-        'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_list_layout'                   => [
-        'exclude'          => true,
-        'inputType'        => 'select',
-        'options_callback' => function () {
-            return \Isotope\Backend::getTemplates('iso_list_');
-        },
-        'eval'             => ['includeBlankOption' => true, 'tl_class' => 'w50', 'chosen' => true],
-        'sql'              => "varchar(64) NOT NULL default ''",
-    ],
-    'iso_gallery'                       => [
-        'exclude'    => true,
-        'inputType'  => 'select',
-        'foreignKey' => 'tl_iso_gallery.name',
-        'eval'       => ['includeBlankOption' => true, 'chosen' => true, 'tl_class' => 'w50'],
-        'sql'        => "int(10) unsigned NOT NULL default '0'",
-    ],
-    'iso_cols'                          => [
-        'exclude'   => true,
-        'default'   => 1,
-        'inputType' => 'text',
-        'eval'      => ['maxlength' => 1, 'rgxp' => 'digit', 'tl_class' => 'w50'],
-        'sql'       => "int(1) unsigned NOT NULL default '1'",
-    ],
-    'iso_use_quantity'                  => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['tl_class' => 'w50'],
-        'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_emptyMessage'                  => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['submitOnChange' => true, 'tl_class' => 'clr w50'],
-        'sql'       => "char(1) NOT NULL default ''",
-    ],
-    'iso_emptyFilter'                   => [
-        'exclude'   => true,
-        'inputType' => 'checkbox',
-        'eval'      => ['submitOnChange' => true, 'tl_class' => 'clr'],
-        'sql'       => "char(1) NOT NULL default ''",
     ],
     'iso_description'                   => [
         'exclude'   => true,
@@ -279,10 +103,10 @@ $fields = [
             'tl_class'          => 'long clr',
             'multiColumnEditor' => [
                 'palettes' => [
-                    'default' => 'iso_direct_checkout_product,iso_use_quantity',
+                    'default' => 'product,useQuantity',
                 ],
                 'fields'   => [
-                    'product' => [
+                    'iso_direct_checkout_product' => [
                         'label'            => &$GLOBALS['TL_LANG']['tl_module']['iso_direct_checkout_product'],
                         'exclude'          => true,
                         'inputType'        => 'select',
@@ -295,7 +119,7 @@ $fields = [
                             'groupStyle'         => 'width: 97%;'
                         ],
                     ],
-                    'useQuantity'            => [
+                    'iso_use_quantity'            => [
                         'label'     => &$GLOBALS['TL_LANG']['tl_module']['iso_use_quantity'],
                         'exclude'   => true,
                         'inputType' => 'checkbox',
@@ -318,7 +142,7 @@ $fields = [
                     'default' => 'iso_direct_checkout_product_type,iso_use_quantity',
                 ],
                 'fields'   => [
-                    'productType' => [
+                    'iso_direct_checkout_product_type' => [
                         'label'      => &$GLOBALS['TL_LANG']['tl_module']['iso_direct_checkout_product_type'],
                         'exclude'    => true,
                         'inputType'  => 'select',
@@ -333,7 +157,7 @@ $fields = [
                         ],
                         'sql'        => "int(10) unsigned NOT NULL default '0'",
                     ],
-                    'useQuantity'                 => [
+                    'iso_use_quantity'                 => [
                         'label'     => &$GLOBALS['TL_LANG']['tl_module']['iso_use_quantity'],
                         'exclude'   => true,
                         'inputType' => 'checkbox',
