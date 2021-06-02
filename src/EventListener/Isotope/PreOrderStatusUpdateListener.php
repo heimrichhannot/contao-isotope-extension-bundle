@@ -11,6 +11,7 @@ namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope;
 use Contao\StringUtil;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\StockManager;
 use HeimrichHannot\UtilsBundle\Container\ContainerUtil;
+use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
 use Isotope\Isotope;
 use Isotope\Model\ProductCollection\Order;
 
@@ -18,11 +19,13 @@ class PreOrderStatusUpdateListener
 {
     protected StockManager  $stockManager;
     protected ContainerUtil $containerUtil;
+    protected DatabaseUtil  $databaseUtil;
 
-    public function __construct(StockManager $stockManager, ContainerUtil $containerUtil)
+    public function __construct(StockManager $stockManager, ContainerUtil $containerUtil, DatabaseUtil $databaseUtil)
     {
         $this->stockManager = $stockManager;
         $this->containerUtil = $containerUtil;
+        $this->databaseUtil = $databaseUtil;
     }
 
     public function updateStock(Order $order, $newsStatus)
@@ -44,8 +47,9 @@ class PreOrderStatusUpdateListener
                     $totalQuantity = $this->stockManager->getTotalStockQuantity($item->quantity, $product, null, $item->setQuantity);
 
                     if ($totalQuantity) {
-                        $product->stock += $totalQuantity;
-                        $product->save();
+                        $this->databaseUtil->update('tl_iso_product', [
+                            'stock' => $product->stock + $totalQuantity,
+                        ], 'tl_iso_product.id=?', [$product->id]);
                     }
                 }
             }
@@ -68,14 +72,15 @@ class PreOrderStatusUpdateListener
                     $totalQuantity = $this->stockManager->getTotalStockQuantity($item->quantity, $product);
 
                     if ($totalQuantity) {
-                        $product->stock -= $totalQuantity;
+                        $data = [
+                            'stock' => $product->stock - $totalQuantity,
+                        ];
 
-                        if ($product->stock <= 0
-                            && !$this->stockManager->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
-                            $product->shipping_exempt = true;
+                        if ($data['stock'] <= 0 && !$this->stockManager->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
+                            $data['shipping_exempt'] = true;
                         }
 
-                        $product->save();
+                        $this->databaseUtil->update('tl_iso_product', $data, 'tl_iso_product.id=?', [$product->id]);
                     }
                 }
             }

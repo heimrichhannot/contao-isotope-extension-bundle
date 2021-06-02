@@ -463,11 +463,9 @@ class DirectCheckoutForm extends Form
         $tokens = [];
 
         // Run trough all steps to collect checkout information
-        foreach ($steps as $modules) {
-            /** @var IsotopeCheckoutStep $module */
-            foreach ($modules as $module) {
-                $tokens = array_merge($tokens, $module->getNotificationTokens($order));
-            }
+        /** @var IsotopeCheckoutStep $module */
+        foreach ($steps as $module) {
+            $tokens = array_merge($tokens, $module->getNotificationTokens($order));
         }
 
         return $tokens;

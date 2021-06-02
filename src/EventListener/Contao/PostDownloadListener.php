@@ -10,6 +10,7 @@ namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Contao;
 
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\ServiceAnnotation\Hook;
+use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 
 /**
@@ -17,13 +18,15 @@ use HeimrichHannot\UtilsBundle\Model\ModelUtil;
  */
 class PostDownloadListener
 {
-    protected ContaoFramework    $framework;
-    protected ModelUtil          $modelUtil;
+    protected ContaoFramework $framework;
+    protected ModelUtil       $modelUtil;
+    protected DatabaseUtil    $databaseUtil;
 
-    public function __construct(ContaoFramework $framework, ModelUtil $modelUtil)
+    public function __construct(ContaoFramework $framework, ModelUtil $modelUtil, DatabaseUtil $databaseUtil)
     {
         $this->framework = $framework;
         $this->modelUtil = $modelUtil;
+        $this->databaseUtil = $databaseUtil;
     }
 
     public function __invoke($path)
@@ -37,8 +40,9 @@ class PostDownloadListener
         }
 
         if (null !== ($product = $this->modelUtil->findModelInstanceByPk('tl_iso_product', $download->pid))) {
-            ++$product->downloadCount;
-            $product->save();
+            $this->databaseUtil->update('tl_iso_product', [
+                'downloadCount' => $product->downloadCount + 1,
+            ], 'tl_iso_product.id=?', [$product->id]);
         }
     }
 }

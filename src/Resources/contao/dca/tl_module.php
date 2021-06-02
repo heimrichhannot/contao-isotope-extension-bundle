@@ -28,7 +28,7 @@ $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\Controller\FrontendModul
 
 $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\DirectCheckoutModule::TYPE] =
     '{title_legend},name,headline,type;' .
-    '{config_legend},jumpTo,formHybridAsync,formHybridResetAfterSubmission,iso_direct_checkout_product_mode,iso_direct_checkout_products,nc_notification,iso_shipping_modules,iso_use_notes,iso_useAgb,iso_useConsent,formHybridCustomSubmit;' .
+    '{config_legend},iso_config_id,jumpTo,formHybridAsync,formHybridResetAfterSubmission,iso_direct_checkout_product_mode,iso_direct_checkout_products,nc_notification,iso_shipping_modules,iso_use_notes,iso_useAgb,iso_useConsent,formHybridCustomSubmit;' .
     '{template_legend},formHybridTemplate;{protected_legend:hide},protected;{expert_legend:hide},guests,cssID,space';
 
 $dca['palettes'][\HeimrichHannot\IsotopeExtensionBundle\Controller\FrontendModule\IsoProductRankingModuleController::TYPE] =
@@ -103,7 +103,7 @@ $fields = [
             'tl_class'          => 'long clr',
             'multiColumnEditor' => [
                 'palettes' => [
-                    'default' => 'product,useQuantity',
+                    'default' => 'iso_direct_checkout_product,iso_use_quantity',
                 ],
                 'fields'   => [
                     'iso_direct_checkout_product' => [
@@ -174,7 +174,7 @@ $fields = [
     'iso_use_notes'                     => [
         'exclude'   => true,
         'inputType' => 'checkbox',
-        'eval'      => ['submitOnChange' => true, 'tl_class' => 'clr'],
+        'eval'      => ['tl_class' => 'clr'],
         'sql'       => "char(1) NOT NULL default ''",
     ],
     'iso_useAgb'                        => [
@@ -206,3 +206,5 @@ $fields = [
 ];
 
 $dca['fields'] = array_merge(is_array($dca['fields']) ? $dca['fields'] : [], $fields);
+
+$dca['fields']['jumpTo']['eval']['tl_class'] = 'w50 autoheight';

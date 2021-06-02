@@ -9,6 +9,7 @@
 namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope;
 
 use Haste\Generator\RowClass;
+use Haste\Haste;
 use Haste\Util\Format;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\StockManager;
 use Isotope\Frontend;
@@ -201,7 +202,7 @@ class PostCheckoutListener
     {
         $blnHasProduct = $item->hasProduct();
         $objProduct = $item->getProduct();
-        $objConfig = $this->getRelated('config_id') ?: Isotope::getConfig();
+        $objConfig = Isotope::getConfig();
         $arrCSS = ($blnHasProduct ? deserialize($objProduct->cssID, true) : []);
 
         // Set the active product for insert tags replacement
@@ -247,7 +248,7 @@ class PostCheckoutListener
         $taxIds = [];
         $arrItems = [];
 
-        foreach ($this->getItems($varCallable) as $objItem) {
+        foreach ($order->getItems($varCallable) as $objItem) {
             // FIX - check for product type id
             if ($objItem->getProduct()->type != $productType) {
                 continue;

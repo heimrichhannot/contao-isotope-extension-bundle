@@ -13,6 +13,7 @@ use Contao\Model;
 use HeimrichHannot\IsotopeExtensionBundle\Attribute\MaxOrderSizeAttribute;
 use HeimrichHannot\IsotopeExtensionBundle\Attribute\StockAttribute;
 use HeimrichHannot\UtilsBundle\Container\ContainerUtil;
+use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 use Isotope\Interfaces\IsotopeProduct;
 use Isotope\Isotope;
@@ -24,7 +25,8 @@ use Isotope\Model\ProductType;
 
 class StockManager
 {
-    protected ModelUtil $modelUtil;
+    protected ModelUtil    $modelUtil;
+    protected DatabaseUtil $databaseUtil;
     /**
      * @var StockAttribute
      */
@@ -42,12 +44,14 @@ class StockManager
         StockAttribute $stockAttribute,
         MaxOrderSizeAttribute $maxOrderSizeAttribute,
         ContainerUtil $containerUtil,
-        ModelUtil $modelUtil
+        ModelUtil $modelUtil,
+        DatabaseUtil $databaseUtil
     ) {
         $this->stockAttribute = $stockAttribute;
         $this->maxOrderSizeAttribute = $maxOrderSizeAttribute;
         $this->containerUtil = $containerUtil;
         $this->modelUtil = $modelUtil;
+        $this->databaseUtil = $databaseUtil;
     }
 
     /**
@@ -231,14 +235,15 @@ class StockManager
 
                 $intQuantity = $this->getTotalStockQuantity($item->quantity, $product);
 
-                $product->stock -= $intQuantity;
+                $data = [
+                    'stock' => $product->stock - $intQuantity,
+                ];
 
-                if ($product->stock <= 0
-                    && !$this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
-                    $product->shipping_exempt = true;
+                if ($data['stock'] <= 0 && !$this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
+                    $data['shipping_exempt'] = true;
                 }
 
-                $product->save();
+                $this->databaseUtil->update('tl_iso_product', $data, 'tl_iso_product.id=?', [$product->id]);
             }
         }
 

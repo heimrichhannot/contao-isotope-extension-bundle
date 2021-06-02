@@ -63,8 +63,9 @@ class IsoProductCollectionContainer
             );
 
             if ($totalStockQuantity) {
-                $product->stock += $totalStockQuantity;
-                $product->save();
+                $this->databaseUtil->update('tl_iso_product', [
+                    'stock' => $product->stock + $totalStockQuantity,
+                ], 'tl_iso_product.id=?', [$product->id]);
             }
         }
     }
