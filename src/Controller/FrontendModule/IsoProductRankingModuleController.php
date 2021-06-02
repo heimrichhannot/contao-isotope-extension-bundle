@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class IsoProductRankingModuleController extends AbstractFrontendModuleController
 {
-    const TYPE = 'iso_productranking';
+    const TYPE = 'iso_product_ranking';
 
     /**
      * @var ModelUtil

@@ -19,4 +19,4 @@ $lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\OrderDetailsExtended
 $lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\DirectCheckoutModule::TYPE][0]                         = 'Direktbestellung';
 $lang[\HeimrichHannot\IsotopeExtensionBundle\FrontendModule\DirectCheckoutModule::TYPE][1]                         = 'Schicken Sie Bestellungen ohne Login und Kasse ganz einfach über ein Formular ab.';
 $lang[\HeimrichHannot\IsotopeExtensionBundle\Controller\FrontendModule\IsoProductRankingModuleController::TYPE][0] = 'Produktranking';
-$lang[\HeimrichHannot\IsotopeExtensionBundle\Controller\FrontendModule\IsoProductRankingModuleController::TYPE][0] = 'Zeigt die Entwicklung der Verkaufszahlen für bestimmte Produkte in einer sortierbaren Liste an.';
+$lang[\HeimrichHannot\IsotopeExtensionBundle\Controller\FrontendModule\IsoProductRankingModuleController::TYPE][1] = 'Zeigt die Entwicklung der Verkaufszahlen für bestimmte Produkte in einer sortierbaren Liste an.';
