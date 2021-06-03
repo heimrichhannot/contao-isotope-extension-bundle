@@ -417,7 +417,10 @@ class DirectCheckoutForm extends Form
                 if ($this->{$callback[0]}->{$callback[1]}($order, $this->objCheckoutModule) === false) {
                     System::log('Callback '.$callback[0].'::'.$callback[1].'() cancelled checkout for Order ID '.$this->id, __METHOD__, TL_ERROR);
 
-                    $this->objCheckoutModule->redirectToStep('failed');
+                    $cart->delete();
+                    $order->delete();
+
+                    Controller::reload();
                 }
             }
         }
