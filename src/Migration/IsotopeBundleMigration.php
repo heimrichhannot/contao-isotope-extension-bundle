@@ -44,7 +44,8 @@ class IsotopeBundleMigration implements MigrationInterface
         if ($result->rowCount() > 0) {
             $stmt = $this->connection->prepare('SELECT id,stock,downloadCount,relevance FROM tl_iso_product_data WHERE pid=?');
 
-            while ($product = (object) $result->fetchAssociative()) {
+            while ($product = $result->fetchAssociative()) {
+                $product = (object) $product;
                 $productData = (object) $stmt->executeQuery([$product->id])->fetchAssociative();
 
                 $this->connection->executeQuery('UPDATE tl_iso_product_data SET stock=?,downloadCount=?,relevance=?', [
