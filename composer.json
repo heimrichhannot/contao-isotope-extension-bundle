@@ -4,7 +4,7 @@
   "description": "This bundle offers additional functionality for the isotope ecommerce system.",
   "license": "LGPL-3.0-or-later",
   "require": {
-    "php": "^7.4",
+    "php": "^7.4 || ^8.0",
     "contao/core-bundle": "^4.9",
     "isotope/isotope-core": "^2.7",
     "heimrichhannot/contao-utils-bundle": "^2.191",
