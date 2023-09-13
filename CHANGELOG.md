@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2023-09-13
+- Fixed: missing action template variable for products in ProductListExtendedModule
+
 ## [0.1.1] - 2023-04-03
 - Added: support for php version 8
 

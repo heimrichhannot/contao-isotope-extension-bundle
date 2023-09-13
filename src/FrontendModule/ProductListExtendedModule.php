@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2021 Heimrich & Hannot GmbH
+ * Copyright (c) 2023 Heimrich & Hannot GmbH
  *
  * @license LGPL-3.0-or-later
  */
@@ -293,6 +293,7 @@ class ProductListExtendedModule extends ProductList
     {
         $buffer = [];
         $defaultProductOptions = $this->getDefaultProductOptions();
+        $request = System::getContainer()->get('request_stack')->getCurrentRequest();
 
         /** @var \Isotope\Model\Product\Standard $product */
         foreach ($this->products as $product) {
@@ -305,6 +306,10 @@ class ProductListExtendedModule extends ProductList
                 'jumpTo' => $this->findJumpToPage($product),
                 'requestToken' => $this->tokenManager->getToken($this->token)->getValue(),
             ];
+
+            if ($request) {
+                $product->action = $request->getBasePath().$request->getPathInfo();
+            }
 
             if (Environment::get('isAjaxRequest') && $this->request->getPost('AJAX_MODULE') == $this->id && $this->request->getPost('AJAX_PRODUCT') == $product->getProductId()) {
                 $arrCheck = System::getContainer()->get(StockManager::class)->validateQuantity($product, $this->request->getPost('quantity_requested'), Isotope::getCart()->getItemForProduct($product), true);
