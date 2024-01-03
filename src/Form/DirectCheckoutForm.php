@@ -18,6 +18,7 @@ use Isotope\CheckoutStep\BillingAddress;
 use Isotope\CheckoutStep\ShippingAddress;
 use Isotope\CheckoutStep\ShippingMethod;
 use Isotope\Interfaces\IsotopeCheckoutStep;
+use Isotope\Interfaces\IsotopeNotificationTokens;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Isotope;
 use Isotope\Model\Address;
@@ -460,17 +461,31 @@ class DirectCheckoutForm extends Form
         }
     }
 
-    // copy from Checkout.php
-    protected function getNotificationTokensFromSteps(array $steps, IsotopeProductCollection $order)
+    /**
+     * Retrieve the array of notification data for parsing simple tokens
+     * Copied from Isotope\Module\Checkout.php
+     *
+     * @param array $arrSteps
+     * @param IsotopeProductCollection $objOrder
+     *
+     * @return array
+     */
+    protected function getNotificationTokensFromSteps(array $arrSteps, IsotopeProductCollection $objOrder): array
     {
-        $tokens = [];
+        $arrTokens = [];
 
-        // Run trough all steps to collect checkout information
+        // Run through all steps to collect checkout information
         /** @var IsotopeCheckoutStep $module */
-        foreach ($steps as $module) {
-            $tokens = array_merge($tokens, $module->getNotificationTokens($order));
+        foreach ($arrSteps as $arrModules) {
+            /** @var IsotopeCheckoutStep $objModule */
+            foreach ($arrModules as $objModule) {
+                // Method check is BC for when IsotopeCheckoutStep contained "getNotificationTokens" method
+                if ($objModule instanceof IsotopeNotificationTokens || \method_exists($objModule, 'getNotificationTokens')) {
+                    $arrTokens = array_merge($arrTokens, $objModule->getNotificationTokens($objOrder));
+                }
+            }
         }
 
-        return $tokens;
+        return $arrTokens;
     }
 }
