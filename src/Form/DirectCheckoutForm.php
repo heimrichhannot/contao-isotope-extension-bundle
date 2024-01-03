@@ -470,19 +470,16 @@ class DirectCheckoutForm extends Form
      *
      * @return array
      */
-    protected function getNotificationTokensFromSteps(array $arrSteps, IsotopeProductCollection $objOrder): array
+    protected function getNotificationTokensFromSteps(array $arrSteps, IsotopeProductCollection $objOrder)
     {
         $arrTokens = [];
 
         // Run through all steps to collect checkout information
-        /** @var IsotopeCheckoutStep $module */
-        foreach ($arrSteps as $arrModules) {
-            /** @var IsotopeCheckoutStep $objModule */
-            foreach ($arrModules as $objModule) {
-                // Method check is BC for when IsotopeCheckoutStep contained "getNotificationTokens" method
-                if ($objModule instanceof IsotopeNotificationTokens || \method_exists($objModule, 'getNotificationTokens')) {
-                    $arrTokens = array_merge($arrTokens, $objModule->getNotificationTokens($objOrder));
-                }
+        /** @var IsotopeCheckoutStep|mixed $objModule */
+        foreach ($arrSteps as $objModule) {
+            // Method check is BC for when IsotopeCheckoutStep contained "getNotificationTokens" method
+            if ($objModule instanceof IsotopeNotificationTokens || \method_exists($objModule, 'getNotificationTokens')) {
+                $arrTokens = array_merge($arrTokens, $objModule->getNotificationTokens($objOrder));
             }
         }
 
