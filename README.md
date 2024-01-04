@@ -27,6 +27,9 @@ Adds various fields to isotope products.
 
 - a link to the current cart containing a badge showing the current quantity
 
+#### Direct checkout
+- directly order a product without registration or shopping cart
+
 #### Extended Order Details
 
 - adds member login check if the order is linked to a member
