@@ -24,6 +24,9 @@ class IsoProductStockFieldListener
 {
     public const SESSION_PREFIX = 'huh_iso_stock_loaded.';
 
+    /** Back end actions that render the stock field before saving it; overrideAll and others save without a render. */
+    public const FORM_ACTIONS = ['edit', 'editAll'];
+
     protected Connection   $connection;
     protected RequestStack $requestStack;
 
@@ -41,7 +44,7 @@ class IsoProductStockFieldListener
      */
     public function onLoad($value, DataContainer $dc)
     {
-        if (Input::post('FORM_SUBMIT') !== $dc->table && null !== ($session = $this->getSession())) {
+        if (Input::post('FORM_SUBMIT') !== $dc->table && $this->isFormAction() && null !== ($session = $this->getSession())) {
             $session->set(self::SESSION_PREFIX.$dc->id, (string) $value);
         }
 
@@ -62,6 +65,12 @@ class IsoProductStockFieldListener
 
         $loaded = (string) $session->get($key);
         $session->remove($key);
+
+        // e.g. overrideAll sets an absolute value; an entry left over from an abandoned edit form must not turn it into a delta
+        if (!$this->isFormAction()) {
+            return $value;
+        }
+
         $value = (string) $value;
 
         if ('' === $value || '' === $loaded) {
@@ -86,6 +95,11 @@ class IsoProductStockFieldListener
         $current = $this->connection->fetchOne('SELECT stock FROM tl_iso_product WHERE id = :id', ['id' => (int) $dc->id], ['id' => ParameterType::INTEGER]);
 
         return false === $current ? $value : (string) $current;
+    }
+
+    protected function isFormAction(): bool
+    {
+        return \in_array(Input::get('act'), self::FORM_ACTIONS, true);
     }
 
     protected function getSession()

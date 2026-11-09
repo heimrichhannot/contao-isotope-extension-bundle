@@ -19,15 +19,15 @@ $fields = [
         'sql'        => "varchar(255) NOT NULL default ''"
     ],
     'stock'                   => [
-        'label'      => &$GLOBALS['TL_LANG']['tl_iso_product']['stock'],
-        'inputType'  => 'text',
-        'eval'       => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
-        'attributes' => ['legend' => 'inventory_legend', 'fe_sorting' => true],
+        'label'         => &$GLOBALS['TL_LANG']['tl_iso_product']['stock'],
+        'inputType'     => 'text',
+        'eval'          => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
+        'attributes'    => ['legend' => 'inventory_legend', 'fe_sorting' => true],
         'load_callback' => [[\HeimrichHannot\IsotopeExtensionBundle\DataContainer\IsoProductStockFieldListener::class, 'onLoad']],
         'save_callback' => [[\HeimrichHannot\IsotopeExtensionBundle\DataContainer\IsoProductStockFieldListener::class, 'onSave']],
-        'sql'        => "varchar(255) NOT NULL default ''",
+        'sql'           => "varchar(255) NOT NULL default ''",
     ],
-    'setQuantity'           => [
+    'setQuantity'             => [
         'label'      => &$GLOBALS['TL_LANG']['tl_iso_product']['setQuantity'],
         'inputType'  => 'text',
         'eval'       => ['mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'],
