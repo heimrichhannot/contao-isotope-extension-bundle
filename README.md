@@ -17,6 +17,34 @@ see UPGRADE.md
 - when removing an order or setting it to a certain status, the stock is decreased (configurable in the shop config)
 - use the max order size attribute to restrict the order size
 
+### Stock reservation
+
+- the stock is reserved atomically when the checkout starts (`preCheckout`), so concurrent orders cannot overbook a product; if a product is no longer available, the checkout is aborted and the message `stockReservationFailed` is shown
+- the reserved quantities are stored on the order in `tl_iso_product_collection.stock_reservation` (serialized map product id => quantity); after adding the column run `contao:migrate`
+- the reservation is released when an incomplete order is deleted (backend or Isotope's cron) and re-applied or released on status changes according to the shop config
+- completed orders keep their reservation (it is their booking)
+
+#### Known limitations
+
+- locked orders that were never completed (`type='order' AND locked>0 AND order_status=0`) keep their reservation and are not shown in the backend order list. Find them with:
+
+  ```sql
+  SELECT id, tstamp, stock_reservation FROM tl_iso_product_collection
+  WHERE type='order' AND locked>0 AND order_status=0 AND stock_reservation IS NOT NULL;
+  ```
+
+  To book the stock back, unserialize `stock_reservation` (map product id => quantity) and, for every entry, run
+
+  ```sql
+  UPDATE tl_iso_product SET stock = CAST(stock AS SIGNED) + <qty> WHERE id = <product id> AND stock <> '';
+  ```
+
+  then set `stock_reservation = NULL` on the order.
+- if a later `preCheckout` hook (e.g. subscriptions) cancels the checkout, the reservation stays on the draft order until the customer retries or Isotope's cron deletes it (`iso_orderTimeout`, default 7 days)
+- backend product form: a stock change is applied as delta against the value displayed in the form; a window of a few milliseconds remains, and if two tabs edit the same product the one opened last wins
+- a concurrent status change and backend delete of the same order may restock twice
+- undoing a backend order delete restores the reservation map without taking the stock again
+
 ### Additional fields for products
 
 Adds various fields to isotope products.
