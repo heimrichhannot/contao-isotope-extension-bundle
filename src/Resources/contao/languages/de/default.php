@@ -15,6 +15,7 @@ $lang['productNotFound']      = 'Das Produkt der Direktbestellung wurde nicht ge
 $lang['stockEmpty']           = 'Der Artikel "%s" ist nicht mehr verfügbar.';
 $lang['stockExceeded']        = 'Vom Artikel "%s" sind nur noch %s Stück verfügbar. Bitte bedenken Sie, dass es manche Artikel nur im Set gibt.';
 $lang['maxOrderSizeExceeded'] = 'Sie können den Artikel "%s" pro Bestellung nur maximal %s-mal anfordern.';
+$lang['stockReservationFailed'] = 'Der Bestand für Ihre Bestellung konnte nicht reserviert werden. Bitte versuchen Sie es erneut.';
 
 /**
  * Misc

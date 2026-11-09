@@ -26,9 +26,14 @@ class PreCheckoutListener
         $this->modelUtil = $modelUtil;
     }
 
-    public function validateStockCheckout($order)
+    /**
+     * Reserves the stock of the order's items (atomically, see StockManager::reserveOrder()).
+     *
+     * @param Order $order
+     */
+    public function validateStockCheckout($order): bool
     {
-        return $this->stockManager->validateStockCheckout($order);
+        return $this->stockManager->reserveOrder($order);
     }
 
     public function modifyShippingPrice($order, $module)

@@ -3,16 +3,14 @@
 /**
  * Isotope Hooks
  */
-$GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_validateStockCheckout']                    =
-    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class, 'validateStockCheckout'];
-$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_validateStockCheckout']                   =
-    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'validateStockCheckout'];
 $GLOBALS['ISO_HOOKS']['addProductToCollection']['huhIsotopeExtensionBundle_validateStockCollectionAdd']    =
     [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\AddProductToCollectionListener::class, '__invoke'];
 $GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_sendOrderNotification']                   =
     [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'sendOrderNotification'];
 $GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_setSetQuantity']                          =
     [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'setSetQuantity'];
+$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_markShippingExempt']                      =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'markShippingExempt'];
 $GLOBALS['ISO_HOOKS']['updateItemInCollection']['huhIsotopeExtensionBundle_validateStockCollectionUpdate'] =
     [HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\UpdateItemInCollectionListener::class, '__invoke'];
 $GLOBALS['ISO_HOOKS']['buttons'][]                                                                         =
@@ -27,6 +25,15 @@ $GLOBALS['ISO_HOOKS']['preOrderStatusUpdate']['huhIsotopeExtensionBundle_updateS
 $GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_modifyShippingPrice']  = [
     \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class,
     'modifyShippingPrice'
+];
+// reserve the stock after all other changes to the order (last of this bundle's preCheckout hooks)
+$GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_validateStockCheckout'] = [
+    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class,
+    'validateStockCheckout'
+];
+$GLOBALS['ISO_HOOKS']['postDeleteCollection']['huhIsotopeExtensionBundle_releaseStock'] = [
+    \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostDeleteCollectionListener::class,
+    '__invoke'
 ];
 
 /**

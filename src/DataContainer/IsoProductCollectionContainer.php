@@ -10,10 +10,10 @@ namespace HeimrichHannot\IsotopeExtensionBundle\DataContainer;
 
 use Contao\CoreBundle\ServiceAnnotation\Callback;
 use Contao\DataContainer;
-use Contao\StringUtil;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\StockManager;
 use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
+use Isotope\Model\ProductCollection\Order;
 
 class IsoProductCollectionContainer
 {
@@ -29,44 +29,22 @@ class IsoProductCollectionContainer
     }
 
     /**
-     * Increase stock after deleting an order.
+     * Releases the stock reservation of a draft order that is deleted in the backend.
+     *
+     * Deleting an order is housekeeping, only its status decides about the stock: completed orders are never
+     * booked back on delete, whatever their status (cancel them first to get their stock back). Drafts that
+     * reserved stock in preCheckout release it, atomically (see StockManager::releaseDeletedDraftReservation()).
      *
      * @Callback(table="tl_iso_product_collection", target="config.ondelete")
      */
-    public function increaseStock(DataContainer $dc)
+    public function releaseReservation(DataContainer $dc): void
     {
-        if (null === ($order = $this->modelUtil->findModelInstanceByPk('tl_iso_product_collection', $dc->id))) {
+        $order = $this->modelUtil->findModelInstanceByPk('tl_iso_product_collection', $dc->id);
+
+        if (!$order instanceof Order) {
             return;
         }
 
-        if (null === ($items = $this->modelUtil->findModelInstancesBy('tl_iso_product_collection_item', [
-                'tl_iso_product_collection_item.pid=?',
-            ], [$order->id]))) {
-            return;
-        }
-
-        $config = $order->getRelated('config_id');
-
-        // if the order had already been set to a stock increasing state,
-        // the stock doesn't need to be increased again
-        if (\in_array($order->order_status, StringUtil::deserialize($config->stockIncreaseOrderStates, true))) {
-            return;
-        }
-
-        foreach ($items as $item) {
-            if (null === ($product = $this->modelUtil->findModelInstanceByPk('tl_iso_product', $item->product_id))) {
-                continue;
-            }
-
-            $totalStockQuantity = $this->stockManager->getTotalCartQuantity(
-                $item->quantity, $product, null, null, $config
-            );
-
-            if ($totalStockQuantity) {
-                $this->databaseUtil->update('tl_iso_product', [
-                    'stock' => $product->stock + $totalStockQuantity,
-                ], 'tl_iso_product.id=?', [$product->id]);
-            }
-        }
+        $this->stockManager->releaseDeletedDraftReservation($order);
     }
 }

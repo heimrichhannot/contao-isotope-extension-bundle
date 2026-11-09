@@ -8,11 +8,9 @@
 
 namespace HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope;
 
-use Contao\StringUtil;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\StockManager;
 use HeimrichHannot\UtilsBundle\Container\ContainerUtil;
 use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
-use Isotope\Isotope;
 use Isotope\Model\ProductCollection\Order;
 
 class PreOrderStatusUpdateListener
@@ -28,6 +26,15 @@ class PreOrderStatusUpdateListener
         $this->databaseUtil = $databaseUtil;
     }
 
+    /**
+     * Books the order's stock back when it changes into a stock-increasing status (e.g. new -> cancelled) and
+     * takes it again (conditionally) when it changes out of one (e.g. cancelled -> new). The order's own shop
+     * config defines the stock-increasing states.
+     *
+     * Known limit: if a later preOrderStatusUpdate hook cancels the transition, the stock change made here stays.
+     *
+     * @return bool true to cancel the status transition (not enough stock to leave the stock-increasing status)
+     */
     public function updateStock(Order $order, $newsStatus)
     {
         // atm only for backend
@@ -35,55 +42,15 @@ class PreOrderStatusUpdateListener
             return false;
         }
 
-        // the order's config is used!
-        $config = Isotope::getConfig();
+        $config = $this->stockManager->getOrderConfig($order);
+        $wasIncreasing = $this->stockManager->isStockIncreaseOrderStatus($order->order_status, $config);
+        $willIncrease = $this->stockManager->isStockIncreaseOrderStatus($newsStatus->id, $config);
 
-        $stockIncreaseOrderStates = StringUtil::deserialize($config->stockIncreaseOrderStates, true);
-
-        // e.g. new -> cancelled => increase the stock based on the order item's setQuantity-values (no validation required, of course)
-        if (!\in_array($order->order_status, $stockIncreaseOrderStates, true) && \in_array($newsStatus->id, $stockIncreaseOrderStates)) {
-            foreach ($order->getItems() as $item) {
-                if (null !== ($product = $item->getProduct())) {
-                    $totalQuantity = $this->stockManager->getTotalStockQuantity($item->quantity, $product, null, $item->setQuantity);
-
-                    if ($totalQuantity) {
-                        $this->databaseUtil->update('tl_iso_product', [
-                            'stock' => $product->stock + $totalQuantity,
-                        ], 'tl_iso_product.id=?', [$product->id]);
-                    }
-                }
-            }
-        } // e.g. cancelled -> new => decrease the stock after validation
-        elseif (\in_array($order->order_status, $stockIncreaseOrderStates, true) && !\in_array($newsStatus->id, $stockIncreaseOrderStates)) {
-            foreach ($order->getItems() as $item) {
-                if (null !== ($product = $item->getProduct())) {
-                    $skipValidation = $this->stockManager->getOverridableStockProperty('skipStockValidation', $product);
-
-                    // watch out: also in backend the current set quantity is used for validation!
-                    if (!$skipValidation && !$this->stockManager->validateQuantity($product, $item->quantity)) {
-                        // if the validation breaks for only one product collection item -> cancel the order status transition
-                        return true;
-                    }
-                }
-            }
-
-            foreach ($order->getItems() as $item) {
-                if (null !== ($product = $item->getProduct())) {
-                    $totalQuantity = $this->stockManager->getTotalStockQuantity($item->quantity, $product);
-
-                    if ($totalQuantity) {
-                        $data = [
-                            'stock' => $product->stock - $totalQuantity,
-                        ];
-
-                        if ($data['stock'] <= 0 && !$this->stockManager->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
-                            $data['shipping_exempt'] = true;
-                        }
-
-                        $this->databaseUtil->update('tl_iso_product', $data, 'tl_iso_product.id=?', [$product->id]);
-                    }
-                }
-            }
+        if (!$wasIncreasing && $willIncrease) {
+            $this->stockManager->restockOrder($order);
+        } elseif ($wasIncreasing && !$willIncrease && !$this->stockManager->unrestockOrder($order)) {
+            // not enough stock for at least one item -> cancel the order status transition
+            return true;
         }
 
         // don't cancel

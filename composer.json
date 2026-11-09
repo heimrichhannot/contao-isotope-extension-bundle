@@ -6,6 +6,7 @@
   "require": {
     "php": "^7.4 || ^8.0",
     "contao/core-bundle": "^4.9",
+    "doctrine/dbal": "^2.13 || ^3.0",
     "isotope/isotope-core": "^2.7",
     "heimrichhannot/contao-utils-bundle": "^2.191",
     "heimrichhannot/contao-formhybrid": "^3.17",

@@ -34,9 +34,24 @@ class PostCheckoutListener
         $this->stockManager = $stockManager;
     }
 
+    /**
+     * No longer registered as postCheckout hook: the stock is reserved atomically in preCheckout
+     * (see PreCheckoutListener::validateStockCheckout() and StockManager::reserveOrder()).
+     *
+     * @param Order $order
+     *
+     * @return bool always true
+     *
+     * @deprecated kept for backwards compatibility, does nothing
+     */
     public function validateStockCheckout($order)
     {
-        return $this->stockManager->validateStockCheckout($order, true);
+        return true;
+    }
+
+    public function markShippingExempt(Order $order)
+    {
+        $this->stockManager->markShippingExemptForEmptyStock($order);
     }
 
     public function setSetQuantity(Order $order)
