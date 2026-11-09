@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Fixed: the backend product form no longer overwrites concurrent stock changes (change is applied as delta)
 - Fixed: status changes now use the shop config of the order itself
 - Changed: stock is reserved in `preCheckout` and released when an incomplete order is deleted
+- Changed: deleting an order in the backend no longer changes the stock of completed orders, whatever their status; only status changes do (cancel an order first to get its stock back)
 - Changed: new column `tl_iso_product_collection.stock_reservation` -> run `contao:migrate` (or update the database)
 - Deprecated: `StockManager::validateStockCheckout()`, `PostCheckoutListener::validateStockCheckout()` (no longer registered, does nothing)
 - Added: `doctrine/dbal` requirement (`executeStatement`/`fetchOne` are used)

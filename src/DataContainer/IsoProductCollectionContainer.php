@@ -29,15 +29,15 @@ class IsoProductCollectionContainer
     }
 
     /**
-     * Increase stock after deleting an order.
+     * Releases the stock reservation of a draft order that is deleted in the backend.
      *
-     * Books the stock of completed or reserved orders back (atomically, see StockManager::restockDeletedOrder(),
-     * which deletes the order row itself so the stock is booked back only once). Orders in a stock-increasing
-     * status (e.g. cancelled) already got their stock back.
+     * Deleting an order is housekeeping, only its status decides about the stock: completed orders are never
+     * booked back on delete, whatever their status (cancel them first to get their stock back). Drafts that
+     * reserved stock in preCheckout release it, atomically (see StockManager::releaseDeletedDraftReservation()).
      *
      * @Callback(table="tl_iso_product_collection", target="config.ondelete")
      */
-    public function increaseStock(DataContainer $dc)
+    public function releaseReservation(DataContainer $dc): void
     {
         $order = $this->modelUtil->findModelInstanceByPk('tl_iso_product_collection', $dc->id);
 
@@ -45,10 +45,6 @@ class IsoProductCollectionContainer
             return;
         }
 
-        if ($this->stockManager->isStockIncreaseOrderStatus($order->order_status, $this->stockManager->getOrderConfig($order))) {
-            return;
-        }
-
-        $this->stockManager->restockDeletedOrder($order);
+        $this->stockManager->releaseDeletedDraftReservation($order);
     }
 }

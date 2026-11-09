@@ -395,41 +395,57 @@ class StockManager
     }
 
     /**
-     * Books the stock of an order that is deleted in the backend (DC_Table) back. Must be called before DC_Table
-     * deletes the row (ondelete callback).
+     * Releases the stock reservation of a draft order that is deleted in the backend (DC_Table). Must be called
+     * before DC_Table deletes the row (ondelete callback).
      *
-     * Only orders that hold stock are booked back: completed orders (stock taken at checkout) and drafts with a
-     * reservation. To book back only once, this method deletes the order row itself (only if it still holds the
-     * map that was read) and books back only if it did: a concurrent Model::delete() of the same order (whose
-     * postDeleteCollection listener releases a draft's reservation) or a second backend delete then deletes
-     * nothing and books nothing back. The callers must check the order status themselves (orders in a
-     * stock-increasing status hold no stock).
+     * Completed orders are never touched: deleting is housekeeping, their stock changes only through status
+     * transitions. To release only once, this method deletes the draft row itself (only if it still holds the
+     * map and settings that were read, i.e. it is still not completed) and books back only if it did: a concurrent
+     * Model::delete() of the same draft (whose postDeleteCollection listener releases the reservation), a
+     * checkout completing meanwhile or a second backend delete then deletes nothing and books nothing back.
      *
-     * @return bool true if this call deleted the row and booked the stock back
+     * @return bool true if this call deleted the row and released the reservation
      */
-    public function restockDeletedOrder(Order $order): bool
+    public function releaseDeletedDraftReservation(Order $order): bool
     {
         $orderId = (int) $order->id;
-        $map = $this->fetchReservationMap($orderId);
+        // read the row, not the model: checkout_complete lives in the serialized settings column
+        $row = $this->connection->fetchAssociative(
+            'SELECT stock_reservation, settings FROM tl_iso_product_collection WHERE id = :id',
+            ['id' => $orderId],
+            ['id' => ParameterType::INTEGER]
+        );
 
-        if (null === $map && !$order->isCheckoutComplete()) {
-            // draft without reservation: no stock was taken
+        if (false === $row || null === $row['stock_reservation']) {
+            // gone, or a draft without reservation: no stock was taken
             return false;
         }
 
-        $quantities = $this->getOrderStockQuantities($order);
+        $settings = StringUtil::deserialize($row['settings'], true);
 
+        if (!empty($settings['checkout_complete'])) {
+            // completed orders change their stock only through status transitions
+            return false;
+        }
+
+        $map = (string) $row['stock_reservation'];
+
+        // settings change when the checkout completes, so a draft completed meanwhile is not deleted here
         $affected = $this->connection->executeStatement(
-            'DELETE FROM tl_iso_product_collection WHERE id = :id AND stock_reservation <=> :map',
-            ['id' => $orderId, 'map' => $map],
-            ['id' => ParameterType::INTEGER, 'map' => null === $map ? ParameterType::NULL : ParameterType::STRING]
+            'DELETE FROM tl_iso_product_collection WHERE id = :id AND stock_reservation = :map AND settings <=> :settings',
+            ['id' => $orderId, 'map' => $map, 'settings' => $row['settings']],
+            [
+                'id' => ParameterType::INTEGER,
+                'map' => ParameterType::STRING,
+                'settings' => null === $row['settings'] ? ParameterType::NULL : ParameterType::STRING,
+            ]
         );
 
         if (1 !== (int) $affected) {
             return false;
         }
 
-        $this->bookBack($quantities);
+        $this->releaseReservationMap($orderId, $map);
 
         return true;
     }
