@@ -18,6 +18,10 @@ use Isotope\Model\ProductCollection\Order;
  * ProductCollection::delete() calls the postDeleteCollection hook after the row was deleted (also for
  * delete(true)), so the reservation map is only left in the model. The order must not be saved here, that
  * would create it anew. Deleting in the backend doesn't use Model::delete() (see the ondelete callback).
+ * Isotope calls the hook even if the DELETE affected no row (already deleted elsewhere): Contao's
+ * Model::delete() only resets the model's id if it deleted the row, so a set id means nothing to release.
+ * Accepted residual: the in-memory map is trusted, so a re-reservation of the same draft by another request
+ * after this model was loaded is not seen.
  */
 class PostDeleteCollectionListener
 {
@@ -34,6 +38,11 @@ class PostDeleteCollectionListener
     public function __invoke(ProductCollection $collection, $pid): void
     {
         if (!$collection instanceof Order || $collection->isCheckoutComplete() || (int) $pid <= 0) {
+            return;
+        }
+
+        if (null !== $collection->id) {
+            // this call deleted nothing (Model::delete() resets the id only if a row was deleted)
             return;
         }
 
