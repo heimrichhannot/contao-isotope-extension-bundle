@@ -148,13 +148,31 @@ class StockManager
      * Reserves (decreases) the stock of all items of the order and stores what was reserved in the order's
      * stock_reservation field (serialized map: id of the stock row => quantity).
      *
-     * An existing reservation of the order is released first, so calling this repeatedly reserves the stock
-     * only once. Items with unmanaged stock or a quantity <= 0 are skipped. If an item can't be reserved, the
-     * error message is reported via validateQuantity(), everything already decreased is booked back and false
-     * is returned.
+     * If the order already holds exactly the reservation its items need, it is kept as is. Otherwise an
+     * existing reservation is released first and the stock is reserved anew. Items with unmanaged stock or a
+     * quantity <= 0 are skipped. If an item can't be reserved, an error message is reported (see
+     * validateQuantity()), everything already decreased is booked back and false is returned.
      */
     public function reserveOrder(Order $order): bool
     {
+        $orderId = (int) $order->id;
+
+        if ($orderId <= 0) {
+            // the reservation can only be stored on a saved order
+            $this->addReservationFailedError();
+
+            return false;
+        }
+
+        $currentMap = $this->fetchReservationMap($orderId);
+
+        if (null !== $currentMap && $this->unserializeReservationMap($currentMap) === $this->getRequiredReservation($order)) {
+            // releasing first would open a window in which a concurrent request could take the stock
+            $this->syncReservationField($order, $currentMap);
+
+            return true;
+        }
+
         $this->releaseOrder($order);
 
         /** @var array<int, int> $reserved */
@@ -193,7 +211,11 @@ class StockManager
 
             if (!$this->decreaseStock($product, $stockQuantity)) {
                 // the stock changed since the pre-check: report it with the stock decreaseStock() just re-read
-                $this->validateQuantity($product, $quantity);
+                if ($this->validateQuantity($product, $quantity)) {
+                    // the stock rose again meanwhile (or the row vanished): don't leave the user without a message
+                    $this->addReservationFailedError();
+                }
+
                 $this->bookBack($reserved);
 
                 return false;
@@ -210,7 +232,7 @@ class StockManager
 
         $affected = $this->connection->executeStatement(
             'UPDATE tl_iso_product_collection SET stock_reservation = :map WHERE id = :id AND stock_reservation IS NULL',
-            ['map' => $map, 'id' => (int) $order->id],
+            ['map' => $map, 'id' => $orderId],
             ['map' => ParameterType::STRING, 'id' => ParameterType::INTEGER]
         );
 
@@ -218,7 +240,15 @@ class StockManager
             // reserved concurrently by another request: that reservation applies, take ours back
             $this->bookBack($reserved);
 
-            $map = $this->fetchReservationMap((int) $order->id);
+            $map = $this->fetchReservationMap($orderId);
+
+            if (null === $map) {
+                // ... but it is gone again: nothing is reserved for this order, fail closed
+                $this->syncReservationField($order, null);
+                $this->addReservationFailedError();
+
+                return false;
+            }
         }
 
         $this->syncReservationField($order, $map);
@@ -460,6 +490,48 @@ class StockManager
     }
 
     /**
+     * Returns the reservation (id of the stock row => quantity) the order's items currently need, without
+     * changing any stock. Same rules as reserveOrder(): managed stock, quantity > 0, not skipStockEdit.
+     *
+     * @return array<int, int>
+     */
+    protected function getRequiredReservation(Order $order): array
+    {
+        $required = [];
+
+        foreach ($order->getItems() as $item) {
+            $quantity = (int) $item->quantity;
+            $product = $item->getProduct();
+
+            if ($quantity <= 0 || null === $product) {
+                continue;
+            }
+
+            $targetId = $this->getStockTargetId($product);
+
+            if ('' === $this->refreshStock($product, $targetId)
+                || $this->getOverridableStockProperty('skipStockEdit', $product)) {
+                continue;
+            }
+
+            $stockQuantity = (int) $this->getTotalStockQuantity($quantity, $product);
+
+            if ($stockQuantity > 0) {
+                $required[$targetId] = ($required[$targetId] ?? 0) + $stockQuantity;
+            }
+        }
+
+        ksort($required);
+
+        return $required;
+    }
+
+    protected function addReservationFailedError(): void
+    {
+        $this->validateQuantityErrorResult((string) ($GLOBALS['TL_LANG']['MSC']['stockReservationFailed'] ?? ''), false);
+    }
+
+    /**
      * Books the given quantities (id of the stock row => quantity) back.
      *
      * @param array<int, int> $reserved
@@ -505,6 +577,8 @@ class StockManager
                 $reserved[(int) $targetId] = (int) $quantity;
             }
         }
+
+        ksort($reserved);
 
         return $reserved;
     }
