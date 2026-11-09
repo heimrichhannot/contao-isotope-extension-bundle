@@ -10,6 +10,8 @@ namespace HeimrichHannot\IsotopeExtensionBundle\Manager;
 
 use Contao\Message;
 use Contao\Model;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\IsotopeExtensionBundle\Attribute\MaxOrderSizeAttribute;
 use HeimrichHannot\IsotopeExtensionBundle\Attribute\StockAttribute;
 use HeimrichHannot\UtilsBundle\Container\ContainerUtil;
@@ -39,19 +41,105 @@ class StockManager
      * @var ContainerUtil
      */
     private $containerUtil;
+    /**
+     * @var Connection
+     */
+    private $connection;
 
     public function __construct(
         StockAttribute $stockAttribute,
         MaxOrderSizeAttribute $maxOrderSizeAttribute,
         ContainerUtil $containerUtil,
         ModelUtil $modelUtil,
-        DatabaseUtil $databaseUtil
+        DatabaseUtil $databaseUtil,
+        Connection $connection
     ) {
         $this->stockAttribute = $stockAttribute;
         $this->maxOrderSizeAttribute = $maxOrderSizeAttribute;
         $this->containerUtil = $containerUtil;
         $this->modelUtil = $modelUtil;
         $this->databaseUtil = $databaseUtil;
+        $this->connection = $connection;
+    }
+
+    /**
+     * Returns the id of the product row that holds the stock: the parent product if the variant
+     * inherits the stock attribute, otherwise the product itself.
+     */
+    public function getStockTargetId(IsotopeProduct $product): int
+    {
+        if ($product->isVariant() && method_exists($product, 'getVariantAttributes')
+            && !\in_array('stock', (array) $product->getVariantAttributes(), true)) {
+            return (int) $product->getProductId();
+        }
+
+        return (int) $product->getId();
+    }
+
+    /**
+     * Atomically decreases the stock of the product's stock row by $quantity.
+     *
+     * The update only applies if the product's stock is managed (not '') and sufficient, unless
+     * stock validation is skipped for the product (then the stock may become negative).
+     * Afterwards the current stock is always re-read into $product->stock (as string).
+     *
+     * @return bool true if the stock was decreased, false otherwise (insufficient or unmanaged stock)
+     */
+    public function decreaseStock(IsotopeProduct $product, int $quantity): bool
+    {
+        $targetId = $this->getStockTargetId($product);
+
+        // NULLIF keeps CAST away from '' so strict sql_mode can never raise "Truncated incorrect INTEGER value"
+        $sql = "UPDATE tl_iso_product SET stock = CAST(NULLIF(stock, '') AS SIGNED) - :quantity WHERE id = :id AND stock <> ''";
+
+        if (!$this->getOverridableStockProperty('skipStockValidation', $product)) {
+            $sql .= " AND CAST(NULLIF(stock, '') AS SIGNED) >= :quantity";
+        }
+
+        $affected = $this->connection->executeStatement(
+            $sql,
+            ['quantity' => $quantity, 'id' => $targetId],
+            ['quantity' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]
+        );
+
+        $stock = $this->refreshStock($product, $targetId);
+        $success = 1 === (int) $affected;
+
+        if ($success && (int) $stock <= 0
+            && !$this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
+            $this->connection->executeStatement(
+                "UPDATE tl_iso_product SET shipping_exempt = '1' WHERE id = :id",
+                ['id' => $targetId],
+                ['id' => ParameterType::INTEGER]
+            );
+            $product->shipping_exempt = '1';
+        }
+
+        return $success;
+    }
+
+    /**
+     * Atomically increases the stock of the product's stock row by $quantity (only if the stock is
+     * managed) and re-reads the current stock into $product->stock.
+     */
+    public function increaseStock(IsotopeProduct $product, int $quantity): void
+    {
+        $targetId = $this->getStockTargetId($product);
+
+        $this->increaseStockById($targetId, $quantity);
+        $this->refreshStock($product, $targetId);
+    }
+
+    /**
+     * Atomically increases the stock of the given product row by $quantity (only if the stock is managed).
+     */
+    public function increaseStockById(int $targetId, int $quantity): void
+    {
+        $this->connection->executeStatement(
+            "UPDATE tl_iso_product SET stock = CAST(NULLIF(stock, '') AS SIGNED) + :quantity WHERE id = :id AND stock <> ''",
+            ['quantity' => $quantity, 'id' => $targetId],
+            ['quantity' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]
+        );
     }
 
     /**
@@ -248,6 +336,23 @@ class StockManager
         }
 
         return true;
+    }
+
+    /**
+     * Reads the current stock of the given row and writes it (as string) into $product->stock.
+     */
+    protected function refreshStock(IsotopeProduct $product, int $targetId): string
+    {
+        $stock = $this->connection->fetchOne(
+            'SELECT stock FROM tl_iso_product WHERE id = :id',
+            ['id' => $targetId],
+            ['id' => ParameterType::INTEGER]
+        );
+
+        $stock = false === $stock || null === $stock ? '' : (string) $stock;
+        $product->stock = $stock;
+
+        return $stock;
     }
 
     /**
