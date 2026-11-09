@@ -8,8 +8,10 @@
 
 namespace HeimrichHannot\IsotopeExtensionBundle\Manager;
 
+use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\Message;
 use Contao\Model;
+use Contao\System;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\IsotopeExtensionBundle\Attribute\MaxOrderSizeAttribute;
@@ -140,6 +142,136 @@ class StockManager
             ['quantity' => $quantity, 'id' => $targetId],
             ['quantity' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]
         );
+    }
+
+    /**
+     * Reserves (decreases) the stock of all items of the order and stores what was reserved in the order's
+     * stock_reservation field (serialized map: id of the stock row => quantity).
+     *
+     * An existing reservation of the order is released first, so calling this repeatedly reserves the stock
+     * only once. Items with unmanaged stock or a quantity <= 0 are skipped. If an item can't be reserved, the
+     * error message is reported via validateQuantity(), everything already decreased is booked back and false
+     * is returned.
+     */
+    public function reserveOrder(Order $order): bool
+    {
+        $this->releaseOrder($order);
+
+        /** @var array<int, int> $reserved */
+        $reserved = [];
+
+        foreach ($order->getItems() as $item) {
+            $quantity = (int) $item->quantity;
+            $product = $item->getProduct();
+
+            if ($quantity <= 0 || null === $product) {
+                continue;
+            }
+
+            $targetId = $this->getStockTargetId($product);
+
+            // pre-check (and its message) with the current stock, not the one the model was loaded with
+            if ('' === $this->refreshStock($product, $targetId)) {
+                continue;
+            }
+
+            if (!$this->validateQuantity($product, $quantity)) {
+                $this->bookBack($reserved);
+
+                return false;
+            }
+
+            if ($this->getOverridableStockProperty('skipStockEdit', $product)) {
+                continue;
+            }
+
+            $stockQuantity = (int) $this->getTotalStockQuantity($quantity, $product);
+
+            if ($stockQuantity <= 0) {
+                continue;
+            }
+
+            if (!$this->decreaseStock($product, $stockQuantity)) {
+                // the stock changed since the pre-check: report it with the stock decreaseStock() just re-read
+                $this->validateQuantity($product, $quantity);
+                $this->bookBack($reserved);
+
+                return false;
+            }
+
+            $reserved[$targetId] = ($reserved[$targetId] ?? 0) + $stockQuantity;
+        }
+
+        if (!$reserved) {
+            return true;
+        }
+
+        $map = serialize($reserved);
+
+        $affected = $this->connection->executeStatement(
+            'UPDATE tl_iso_product_collection SET stock_reservation = :map WHERE id = :id AND stock_reservation IS NULL',
+            ['map' => $map, 'id' => (int) $order->id],
+            ['map' => ParameterType::STRING, 'id' => ParameterType::INTEGER]
+        );
+
+        if (1 !== (int) $affected) {
+            // reserved concurrently by another request: that reservation applies, take ours back
+            $this->bookBack($reserved);
+
+            $map = $this->fetchReservationMap((int) $order->id);
+        }
+
+        $this->syncReservationField($order, $map);
+
+        return true;
+    }
+
+    /**
+     * Releases the order's stock reservation (if any): clears the stock_reservation field and books the
+     * reserved quantities back. Only the request that actually cleared the field books back.
+     */
+    public function releaseOrder(Order $order): void
+    {
+        $orderId = (int) $order->id;
+        $map = $this->fetchReservationMap($orderId);
+
+        if (null !== $map) {
+            $affected = $this->connection->executeStatement(
+                'UPDATE tl_iso_product_collection SET stock_reservation = NULL WHERE id = :id AND stock_reservation = :map',
+                ['id' => $orderId, 'map' => $map],
+                ['id' => ParameterType::INTEGER, 'map' => ParameterType::STRING]
+            );
+
+            if (1 === (int) $affected) {
+                $this->bookBack($this->unserializeReservationMap($map));
+            }
+        }
+
+        $this->syncReservationField($order, null);
+    }
+
+    /**
+     * Books a serialized reservation map back without compare-and-swap and without touching the order.
+     *
+     * Only for orders that are already deleted (the map can't be released concurrently anymore). $orderId is
+     * only used for the log entry.
+     */
+    public function releaseReservationMap(int $orderId, string $serializedMap): void
+    {
+        $reserved = $this->unserializeReservationMap($serializedMap);
+
+        if (!$reserved) {
+            return;
+        }
+
+        $this->bookBack($reserved);
+
+        if (System::getContainer()->has('monolog.logger.contao')) {
+            System::getContainer()->get('monolog.logger.contao')->info(
+                sprintf('Released the stock reservation of deleted order ID %s: %s', $orderId, json_encode($reserved)),
+                ['contao' => new ContaoContext(__METHOD__, ContaoContext::GENERAL)]
+            );
+        }
     }
 
     /**
@@ -288,50 +420,22 @@ class StockManager
     }
 
     /**
-     * @param bool $isPostCheckout
+     * Checks (without changing the stock) whether all items of the order are available.
+     *
+     * @param bool $isPostCheckout no effect anymore, the stock is no longer decreased here
      *
      * @return bool
+     *
+     * @deprecated use reserveOrder(), which checks and reserves the stock atomically
      */
     public function validateStockCheckout(Order $order, $isPostCheckout = false)
     {
-        $items = $order->getItems();
-        $orders = [];
-
-        foreach ($items as $item) {
+        foreach ($order->getItems() as $item) {
             $product = $item->getProduct();
 
-            if ('' != $product->stock && null !== $product->stock) {
-                // override the quantity!
-                if (!$this->validateQuantity($product, $item->quantity)) {
-                    return false;
-                }
-
-                if ($isPostCheckout) {
-                    $orders[] = $item;
-                }
-            }
-        }
-
-        // save new stock
-        if ($isPostCheckout) {
-            foreach ($orders as $item) {
-                $product = $item->getProduct();
-
-                if ($this->getOverridableStockProperty('skipStockEdit', $product)) {
-                    continue;
-                }
-
-                $intQuantity = $this->getTotalStockQuantity($item->quantity, $product);
-
-                $data = [
-                    'stock' => $product->stock - $intQuantity,
-                ];
-
-                if ($data['stock'] <= 0 && !$this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
-                    $data['shipping_exempt'] = true;
-                }
-
-                $this->databaseUtil->update('tl_iso_product', $data, 'tl_iso_product.id=?', [$product->id]);
+            if (null !== $product && '' != $product->stock && null !== $product->stock
+                && !$this->validateQuantity($product, $item->quantity)) {
+                return false;
             }
         }
 
@@ -353,6 +457,71 @@ class StockManager
         $product->stock = $stock;
 
         return $stock;
+    }
+
+    /**
+     * Books the given quantities (id of the stock row => quantity) back.
+     *
+     * @param array<int, int> $reserved
+     */
+    protected function bookBack(array $reserved): void
+    {
+        foreach ($reserved as $targetId => $quantity) {
+            if ($quantity > 0) {
+                $this->increaseStockById((int) $targetId, (int) $quantity);
+            }
+        }
+    }
+
+    /**
+     * Reads the order's serialized reservation map from the database (not from the model).
+     */
+    protected function fetchReservationMap(int $orderId): ?string
+    {
+        $map = $this->connection->fetchOne(
+            'SELECT stock_reservation FROM tl_iso_product_collection WHERE id = :id',
+            ['id' => $orderId],
+            ['id' => ParameterType::INTEGER]
+        );
+
+        return false === $map || null === $map ? null : (string) $map;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function unserializeReservationMap(string $map): array
+    {
+        $data = @unserialize($map, ['allowed_classes' => false]);
+
+        if (!\is_array($data)) {
+            return [];
+        }
+
+        $reserved = [];
+
+        foreach ($data as $targetId => $quantity) {
+            if ((int) $targetId > 0 && (int) $quantity > 0) {
+                $reserved[(int) $targetId] = (int) $quantity;
+            }
+        }
+
+        return $reserved;
+    }
+
+    /**
+     * Updates the order model's stock_reservation to the value now in the database, so it can't diverge from
+     * it. If the field isn't modified in the model, it stays unmodified, so a later save() of the order doesn't
+     * write it at all (and can't overwrite a reservation made concurrently).
+     */
+    protected function syncReservationField(Order $order, ?string $map): void
+    {
+        $order->mergeRow(['stock_reservation' => $map]);
+
+        if ($order->stock_reservation !== $map) {
+            // the field was modified (but not saved) in the model: override that pending value
+            $order->stock_reservation = $map;
+        }
     }
 
     /**
