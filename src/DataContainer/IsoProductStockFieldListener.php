@@ -18,7 +18,9 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * Keeps the back end product form from overwriting stock changes made while the form was open (orders, other editors).
  *
  * The stock value shown in the form is remembered on load; on save only the difference the editor typed is applied
- * to the current database value instead of writing the (possibly stale) absolute value back.
+ * to the current database value instead of writing the (possibly stale) absolute value back. After that the typed
+ * value is remembered instead, so resubmitting the form (e.g. after another field failed validation) doesn't apply
+ * the difference again.
  */
 class IsoProductStockFieldListener
 {
@@ -91,6 +93,10 @@ class IsoProductStockFieldListener
                 return $value;
             }
         }
+
+        // the typed value is now applied: if another field fails validation, a resubmit of the same value is delta 0
+        // (the next display of the form overwrites the entry, other actions remove it)
+        $session->set($key, $value);
 
         $current = $this->connection->fetchOne('SELECT stock FROM tl_iso_product WHERE id = :id', ['id' => (int) $dc->id], ['id' => ParameterType::INTEGER]);
 
