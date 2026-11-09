@@ -34,11 +34,6 @@ class PostCheckoutListener
         $this->stockManager = $stockManager;
     }
 
-    public function validateStockCheckout($order)
-    {
-        return $this->stockManager->validateStockCheckout($order, true);
-    }
-
     public function setSetQuantity(Order $order)
     {
         if ($this->stockManager->getOverridableShopConfigProperty('skipSets')) {
