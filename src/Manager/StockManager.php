@@ -200,7 +200,9 @@ class StockManager
                 continue;
             }
 
-            if (!$this->decreaseStock($product, $stockQuantity)) {
+            // shipping_exempt is set after checkout (markShippingExemptForEmptyStock()): setting it here, before
+            // Isotope locks the order, would make the order drop its shipping address
+            if (!$this->decreaseStockRow($product, $stockQuantity, null, false)) {
                 // the stock changed since the pre-check: report it with the stock decreaseStock() just re-read
                 if ($this->validateQuantity($product, $quantity)) {
                     // the stock rose again meanwhile (or the row vanished): don't leave the user without a message
@@ -500,6 +502,36 @@ class StockManager
     }
 
     /**
+     * Marks the products whose stock this order emptied as exempt from shipping (unless
+     * skipExemptionFromShippingWhenStockEmpty is set). Runs after checkout, because doing it while
+     * reserving would make Isotope drop the order's shipping address when it locks the order.
+     */
+    public function markShippingExemptForEmptyStock(Order $order): void
+    {
+        $orderId = (int) $order->id;
+        $map = $orderId > 0 ? $this->fetchReservationMap($orderId) : null;
+
+        if (null === $map) {
+            return;
+        }
+
+        foreach (array_keys($this->unserializeReservationMap($map)) as $targetId) {
+            $product = Product::findByPk($targetId);
+
+            if (null === $product
+                || $this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product, $this->getOrderConfig($order))) {
+                continue;
+            }
+
+            $this->connection->executeStatement(
+                "UPDATE tl_iso_product SET shipping_exempt = '1' WHERE id = :id AND stock <> '' AND CAST(NULLIF(stock, '') AS SIGNED) <= 0",
+                ['id' => $targetId],
+                ['id' => ParameterType::INTEGER]
+            );
+        }
+    }
+
+    /**
      * Returns the config value.
      *
      * Checks if global value is overwritten by product or product type
@@ -629,8 +661,9 @@ class StockManager
 
     /**
      * See decreaseStock(); $config is the shop config the stock settings fall back to (null: the current one).
+     * With $markShippingExempt = false an emptied stock does not mark the product as exempt from shipping.
      */
-    protected function decreaseStockRow(IsotopeProduct $product, int $quantity, ?Config $config): bool
+    protected function decreaseStockRow(IsotopeProduct $product, int $quantity, ?Config $config, bool $markShippingExempt = true): bool
     {
         $targetId = $this->getStockTargetId($product);
 
@@ -650,7 +683,7 @@ class StockManager
         $stock = $this->refreshStock($product, $targetId);
         $success = 1 === (int) $affected;
 
-        if ($success && (int) $stock <= 0
+        if ($success && $markShippingExempt && (int) $stock <= 0
             && !$this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product, $config)) {
             $this->connection->executeStatement(
                 "UPDATE tl_iso_product SET shipping_exempt = '1' WHERE id = :id",

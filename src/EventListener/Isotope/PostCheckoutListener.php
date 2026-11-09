@@ -49,6 +49,11 @@ class PostCheckoutListener
         return true;
     }
 
+    public function markShippingExempt(Order $order)
+    {
+        $this->stockManager->markShippingExemptForEmptyStock($order);
+    }
+
     public function setSetQuantity(Order $order)
     {
         if ($this->stockManager->getOverridableShopConfigProperty('skipSets')) {

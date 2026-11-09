@@ -9,6 +9,8 @@ $GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_sendOrderNotifi
     [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'sendOrderNotification'];
 $GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_setSetQuantity']                          =
     [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'setSetQuantity'];
+$GLOBALS['ISO_HOOKS']['postCheckout']['huhIsotopeExtensionBundle_markShippingExempt']                      =
+    [\HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PostCheckoutListener::class, 'markShippingExempt'];
 $GLOBALS['ISO_HOOKS']['updateItemInCollection']['huhIsotopeExtensionBundle_validateStockCollectionUpdate'] =
     [HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\UpdateItemInCollectionListener::class, '__invoke'];
 $GLOBALS['ISO_HOOKS']['buttons'][]                                                                         =
