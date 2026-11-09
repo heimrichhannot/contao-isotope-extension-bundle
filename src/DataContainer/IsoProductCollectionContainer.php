@@ -10,10 +10,10 @@ namespace HeimrichHannot\IsotopeExtensionBundle\DataContainer;
 
 use Contao\CoreBundle\ServiceAnnotation\Callback;
 use Contao\DataContainer;
-use Contao\StringUtil;
 use HeimrichHannot\IsotopeExtensionBundle\Manager\StockManager;
 use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
+use Isotope\Model\ProductCollection\Order;
 
 class IsoProductCollectionContainer
 {
@@ -31,42 +31,24 @@ class IsoProductCollectionContainer
     /**
      * Increase stock after deleting an order.
      *
+     * Books the stock of completed or reserved orders back (atomically, see StockManager::restockDeletedOrder(),
+     * which deletes the order row itself so the stock is booked back only once). Orders in a stock-increasing
+     * status (e.g. cancelled) already got their stock back.
+     *
      * @Callback(table="tl_iso_product_collection", target="config.ondelete")
      */
     public function increaseStock(DataContainer $dc)
     {
-        if (null === ($order = $this->modelUtil->findModelInstanceByPk('tl_iso_product_collection', $dc->id))) {
+        $order = $this->modelUtil->findModelInstanceByPk('tl_iso_product_collection', $dc->id);
+
+        if (!$order instanceof Order) {
             return;
         }
 
-        if (null === ($items = $this->modelUtil->findModelInstancesBy('tl_iso_product_collection_item', [
-                'tl_iso_product_collection_item.pid=?',
-            ], [$order->id]))) {
+        if ($this->stockManager->isStockIncreaseOrderStatus($order->order_status, $this->stockManager->getOrderConfig($order))) {
             return;
         }
 
-        $config = $order->getRelated('config_id');
-
-        // if the order had already been set to a stock increasing state,
-        // the stock doesn't need to be increased again
-        if (\in_array($order->order_status, StringUtil::deserialize($config->stockIncreaseOrderStates, true))) {
-            return;
-        }
-
-        foreach ($items as $item) {
-            if (null === ($product = $this->modelUtil->findModelInstanceByPk('tl_iso_product', $item->product_id))) {
-                continue;
-            }
-
-            $totalStockQuantity = $this->stockManager->getTotalCartQuantity(
-                $item->quantity, $product, null, null, $config
-            );
-
-            if ($totalStockQuantity) {
-                $this->databaseUtil->update('tl_iso_product', [
-                    'stock' => $product->stock + $totalStockQuantity,
-                ], 'tl_iso_product.id=?', [$product->id]);
-            }
-        }
+        $this->stockManager->restockDeletedOrder($order);
     }
 }

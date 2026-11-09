@@ -11,6 +11,7 @@ namespace HeimrichHannot\IsotopeExtensionBundle\Manager;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\Message;
 use Contao\Model;
+use Contao\StringUtil;
 use Contao\System;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
@@ -89,35 +90,7 @@ class StockManager
      */
     public function decreaseStock(IsotopeProduct $product, int $quantity): bool
     {
-        $targetId = $this->getStockTargetId($product);
-
-        // NULLIF keeps CAST away from '' so strict sql_mode can never raise "Truncated incorrect INTEGER value"
-        $sql = "UPDATE tl_iso_product SET stock = CAST(NULLIF(stock, '') AS SIGNED) - :quantity WHERE id = :id AND stock <> ''";
-
-        if (!$this->getOverridableStockProperty('skipStockValidation', $product)) {
-            $sql .= " AND CAST(NULLIF(stock, '') AS SIGNED) >= :quantity";
-        }
-
-        $affected = $this->connection->executeStatement(
-            $sql,
-            ['quantity' => $quantity, 'id' => $targetId],
-            ['quantity' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]
-        );
-
-        $stock = $this->refreshStock($product, $targetId);
-        $success = 1 === (int) $affected;
-
-        if ($success && (int) $stock <= 0
-            && !$this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product)) {
-            $this->connection->executeStatement(
-                "UPDATE tl_iso_product SET shipping_exempt = '1' WHERE id = :id",
-                ['id' => $targetId],
-                ['id' => ParameterType::INTEGER]
-            );
-            $product->shipping_exempt = '1';
-        }
-
-        return $success;
+        return $this->decreaseStockRow($product, $quantity, null);
     }
 
     /**
@@ -305,6 +278,172 @@ class StockManager
     }
 
     /**
+     * Returns the stock quantities the order holds (id of the stock row => quantity): its reservation map if it
+     * has one (read from the database), otherwise (orders from before the reservation) computed from its items
+     * with the order's shop config. Items with unmanaged stock, a deleted product or a quantity <= 0 are skipped.
+     *
+     * @return array<int, int>
+     */
+    public function getOrderStockQuantities(Order $order): array
+    {
+        $map = $this->fetchReservationMap((int) $order->id);
+
+        if (null !== $map) {
+            return $this->unserializeReservationMap($map);
+        }
+
+        $config = $this->getOrderConfig($order);
+        $quantities = [];
+
+        foreach ($order->getItems() as $item) {
+            $quantity = (int) $item->quantity;
+            $product = $item->getProduct();
+
+            if ($quantity <= 0 || null === $product) {
+                continue;
+            }
+
+            $targetId = $this->getStockTargetId($product);
+
+            if ('' === $this->refreshStock($product, $targetId)) {
+                continue;
+            }
+
+            $stockQuantity = (int) $this->getTotalStockQuantity($quantity, $product, null, $item->setQuantity ?: null, $config);
+
+            if ($stockQuantity > 0) {
+                $quantities[$targetId] = ($quantities[$targetId] ?? 0) + $stockQuantity;
+            }
+        }
+
+        ksort($quantities);
+
+        return $quantities;
+    }
+
+    /**
+     * Atomically books the order's stock quantities (see getOrderStockQuantities()) back, e.g. when the order is
+     * cancelled. Unmanaged stock rows are not touched.
+     */
+    public function restockOrder(Order $order): void
+    {
+        $this->bookBack($this->getOrderStockQuantities($order));
+    }
+
+    /**
+     * Atomically decreases the stock by the order's stock quantities again (e.g. a cancelled order is reactivated).
+     *
+     * Each decrease is conditional (enough stock), unless stock validation is skipped for the product (checked with
+     * the order's shop config). Rows of deleted products and rows whose stock is unmanaged are skipped. If a row
+     * can't be decreased, an error message is reported (with the current stock), everything already decreased is
+     * booked back and false is returned.
+     */
+    public function unrestockOrder(Order $order): bool
+    {
+        $config = $this->getOrderConfig($order);
+        /** @var array<int, int> $decreased */
+        $decreased = [];
+
+        foreach ($this->getOrderStockQuantities($order) as $targetId => $quantity) {
+            if ($quantity <= 0 || null === ($product = Product::findByPk($targetId))) {
+                continue;
+            }
+
+            if ($this->decreaseStockRow($product, $quantity, $config)) {
+                $decreased[$targetId] = $quantity;
+
+                continue;
+            }
+
+            if ('' === (string) $product->stock) {
+                // unmanaged (or the row vanished): nothing to decrease
+                continue;
+            }
+
+            $validateStock = $this->stockAttribute->validate($product, $quantity);
+
+            if (true !== $validateStock[0]) {
+                $this->validateQuantityErrorResult((string) $validateStock[1], false);
+            } else {
+                // the stock rose again meanwhile: don't leave the user without a message
+                $this->addReservationFailedError();
+            }
+
+            $this->bookBack($decreased);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Books the stock of an order that is deleted in the backend (DC_Table) back. Must be called before DC_Table
+     * deletes the row (ondelete callback).
+     *
+     * Only orders that hold stock are booked back: completed orders (stock taken at checkout) and drafts with a
+     * reservation. To book back only once, this method deletes the order row itself (only if it still holds the
+     * map that was read) and books back only if it did: a concurrent Model::delete() of the same order (whose
+     * postDeleteCollection listener releases a draft's reservation) or a second backend delete then deletes
+     * nothing and books nothing back. The callers must check the order status themselves (orders in a
+     * stock-increasing status hold no stock).
+     *
+     * @return bool true if this call deleted the row and booked the stock back
+     */
+    public function restockDeletedOrder(Order $order): bool
+    {
+        $orderId = (int) $order->id;
+        $map = $this->fetchReservationMap($orderId);
+
+        if (null === $map && !$order->isCheckoutComplete()) {
+            // draft without reservation: no stock was taken
+            return false;
+        }
+
+        $quantities = $this->getOrderStockQuantities($order);
+
+        $affected = $this->connection->executeStatement(
+            'DELETE FROM tl_iso_product_collection WHERE id = :id AND stock_reservation <=> :map',
+            ['id' => $orderId, 'map' => $map],
+            ['id' => ParameterType::INTEGER, 'map' => null === $map ? ParameterType::NULL : ParameterType::STRING]
+        );
+
+        if (1 !== (int) $affected) {
+            return false;
+        }
+
+        $this->bookBack($quantities);
+
+        return true;
+    }
+
+    /**
+     * Whether the given order status is one of the config's stockIncreaseOrderStates (e.g. "cancelled").
+     *
+     * @param int|string $statusId
+     */
+    public function isStockIncreaseOrderStatus($statusId, ?Config $config = null): bool
+    {
+        if (null === $config) {
+            $config = Isotope::getConfig();
+        }
+
+        $states = array_map('strval', StringUtil::deserialize($config->stockIncreaseOrderStates, true));
+
+        return \in_array((string) $statusId, $states, true);
+    }
+
+    /**
+     * The shop config the order was placed with (falls back to the current config if it is gone).
+     */
+    public function getOrderConfig(Order $order): Config
+    {
+        $config = $order->getRelated('config_id');
+
+        return $config instanceof Config ? $config : Isotope::getConfig();
+    }
+
+    /**
      * @param                       $quantity
      * @param ProductCollectionItem $cartItem
      * @param int                   $setQuantity
@@ -354,10 +493,11 @@ class StockManager
      * product, product type, global shop config.
      *
      * @param $product
+     * @param Config|null $config the shop config to fall back to (default: the current one)
      *
      * @return mixed
      */
-    public function getOverridableStockProperty(string $property, $product)
+    public function getOverridableStockProperty(string $property, $product, ?Config $config = null)
     {
         // at first check for product and product type
         if ($product->overrideStockShopConfig) {
@@ -370,7 +510,7 @@ class StockManager
         }
 
         // nothing returned?
-        $objConfig = Isotope::getConfig();
+        $objConfig = $config ?: Isotope::getConfig();
 
         // per default return the value defined in the global config
         return $objConfig->{$property};
@@ -470,6 +610,42 @@ class StockManager
         }
 
         return true;
+    }
+
+    /**
+     * See decreaseStock(); $config is the shop config the stock settings fall back to (null: the current one).
+     */
+    protected function decreaseStockRow(IsotopeProduct $product, int $quantity, ?Config $config): bool
+    {
+        $targetId = $this->getStockTargetId($product);
+
+        // NULLIF keeps CAST away from '' so strict sql_mode can never raise "Truncated incorrect INTEGER value"
+        $sql = "UPDATE tl_iso_product SET stock = CAST(NULLIF(stock, '') AS SIGNED) - :quantity WHERE id = :id AND stock <> ''";
+
+        if (!$this->getOverridableStockProperty('skipStockValidation', $product, $config)) {
+            $sql .= " AND CAST(NULLIF(stock, '') AS SIGNED) >= :quantity";
+        }
+
+        $affected = $this->connection->executeStatement(
+            $sql,
+            ['quantity' => $quantity, 'id' => $targetId],
+            ['quantity' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER]
+        );
+
+        $stock = $this->refreshStock($product, $targetId);
+        $success = 1 === (int) $affected;
+
+        if ($success && (int) $stock <= 0
+            && !$this->getOverridableStockProperty('skipExemptionFromShippingWhenStockEmpty', $product, $config)) {
+            $this->connection->executeStatement(
+                "UPDATE tl_iso_product SET shipping_exempt = '1' WHERE id = :id",
+                ['id' => $targetId],
+                ['id' => ParameterType::INTEGER]
+            );
+            $product->shipping_exempt = '1';
+        }
+
+        return $success;
     }
 
     /**
