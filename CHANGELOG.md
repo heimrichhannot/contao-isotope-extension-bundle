@@ -4,14 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.4] - unreleased
 - Fixed: overbooking of stock caused by read-modify-write updates and the ignored result of the `postCheckout` stock check; stock is now decreased atomically
-- Fixed: stock comparison on `varchar` columns (string comparison, e.g. "9" > "10")
-- Fixed: stock changes now target the variant row instead of the parent product
+- Fixed: stock is compared numerically in SQL
+- Fixed: stock changes now target the parent product if a variant inherits the stock (variant attributes or the variant's inherit field)
 - Fixed: deleting an order in the backend no longer turns unmanaged products (empty stock) into managed ones
 - Fixed: the backend product form no longer overwrites concurrent stock changes (change is applied as delta)
 - Fixed: status changes now use the shop config of the order itself
 - Changed: stock is reserved in `preCheckout` and released when an incomplete order is deleted
 - Changed: new column `tl_iso_product_collection.stock_reservation` -> run `contao:migrate` (or update the database)
-- Deprecated: `StockManager::validateStockCheckout()`
+- Deprecated: `StockManager::validateStockCheckout()`, `PostCheckoutListener::validateStockCheckout()` (no longer registered, does nothing)
 - Added: `doctrine/dbal` requirement (`executeStatement`/`fetchOne` are used)
 - Added: MSC label `stockReservationFailed`
 - Note: orders that are in the middle of checkout during the deployment are not deducted from the stock
