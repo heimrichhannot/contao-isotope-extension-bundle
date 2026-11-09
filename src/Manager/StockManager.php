@@ -133,10 +133,14 @@ class StockManager
      * Reserves (decreases) the stock of all items of the order and stores what was reserved in the order's
      * stock_reservation field (serialized map: id of the stock row => quantity).
      *
-     * If the order already holds exactly the reservation its items need, it is kept as is. Otherwise an
-     * existing reservation is released first and the stock is reserved anew. Items with unmanaged stock or a
-     * quantity <= 0 are skipped. If an item can't be reserved, an error message is reported (see
-     * validateQuantity()), everything already decreased is booked back and false is returned.
+     * If the order already holds exactly the (non-empty) reservation its items need, it is kept as is. This keep
+     * path skips the checks that don't concern the reserved stock (e.g. maxOrderSize): the same items already
+     * passed them when the reservation was made. Otherwise an existing reservation is released first and the stock
+     * is reserved anew.
+     * Items with unmanaged stock or a quantity <= 0 are skipped. If nothing needs to be reserved, an empty map is
+     * stored, so the order is not mistaken for one from before the reservation (whose stock is computed from its
+     * items). If an item can't be reserved, an error message is reported (see validateQuantity()), everything
+     * already decreased is booked back and false is returned.
      */
     public function reserveOrder(Order $order): bool
     {
@@ -151,7 +155,9 @@ class StockManager
 
         $currentMap = $this->fetchReservationMap($orderId);
 
-        if (null !== $currentMap && $this->unserializeReservationMap($currentMap) === $this->getRequiredReservation($order)) {
+        // an empty map holds no stock: go the full path, so items that are only validated (skipStockEdit) are checked again
+        if (null !== $currentMap && [] !== ($currentReservation = $this->unserializeReservationMap($currentMap))
+            && $currentReservation === $this->getRequiredReservation($order)) {
             // releasing first would open a window in which a concurrent request could take the stock
             $this->syncReservationField($order, $currentMap);
 
@@ -209,10 +215,7 @@ class StockManager
             $reserved[$targetId] = ($reserved[$targetId] ?? 0) + $stockQuantity;
         }
 
-        if (!$reserved) {
-            return true;
-        }
-
+        // also store an empty map: a NULL map would make cancel/delete compute the stock from the items
         $map = serialize($reserved);
 
         $affected = $this->connection->executeStatement(
