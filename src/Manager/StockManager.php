@@ -22,6 +22,7 @@ use HeimrichHannot\UtilsBundle\Database\DatabaseUtil;
 use HeimrichHannot\UtilsBundle\Model\ModelUtil;
 use Isotope\Interfaces\IsotopeProduct;
 use Isotope\Isotope;
+use Isotope\Model\Attribute;
 use Isotope\Model\Config;
 use Isotope\Model\Product;
 use Isotope\Model\ProductCollection\Order;
@@ -68,12 +69,23 @@ class StockManager
     /**
      * Returns the id of the product row that holds the stock: the parent product if the variant
      * inherits the stock attribute, otherwise the product itself.
+     *
+     * Like Isotope's Standard::setRow(), a variant inherits the stock if it is no variant attribute of the
+     * product type or if it is listed in the variant's inherit field (or is an always inherited attribute).
      */
     public function getStockTargetId(IsotopeProduct $product): int
     {
-        if ($product->isVariant() && method_exists($product, 'getVariantAttributes')
-            && !\in_array('stock', (array) $product->getVariantAttributes(), true)) {
-            return (int) $product->getProductId();
+        if ($product->isVariant()) {
+            if (method_exists($product, 'getVariantAttributes')
+                && !\in_array('stock', (array) $product->getVariantAttributes(), true)) {
+                return (int) $product->getProductId();
+            }
+
+            $inherited = array_merge(StringUtil::deserialize($product->inherit, true), Attribute::getInheritFields());
+
+            if (\in_array('stock', $inherited, true)) {
+                return (int) $product->getProductId();
+            }
         }
 
         return (int) $product->getId();
