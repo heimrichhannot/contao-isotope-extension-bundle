@@ -24,7 +24,7 @@ $GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_modifyShippingPr
     \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class,
     'modifyShippingPrice'
 ];
-// reserve the stock after all other changes to the order (registered last)
+// reserve the stock after all other changes to the order (last of this bundle's preCheckout hooks)
 $GLOBALS['ISO_HOOKS']['preCheckout']['huhIsotopeExtensionBundle_validateStockCheckout'] = [
     \HeimrichHannot\IsotopeExtensionBundle\EventListener\Isotope\PreCheckoutListener::class,
     'validateStockCheckout'

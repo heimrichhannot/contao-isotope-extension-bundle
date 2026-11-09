@@ -21,7 +21,9 @@ use Isotope\Model\ProductCollection\Order;
  * Isotope calls the hook even if the DELETE affected no row (already deleted elsewhere): Contao's
  * Model::delete() only resets the model's id if it deleted the row, so a set id means nothing to release.
  * Accepted residual: the in-memory map is trusted, so a re-reservation of the same draft by another request
- * after this model was loaded is not seen.
+ * after this model was loaded is not seen. In the opposite direction a stale map can book back stock that the
+ * other request's own release already returned (double restock). Both need a draft to be deleted (e.g. by the
+ * cron) while a checkout retry of it is running; negligible.
  */
 class PostDeleteCollectionListener
 {
